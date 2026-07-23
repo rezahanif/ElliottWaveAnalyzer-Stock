@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
-from src.waveconf.pivots.zigzag import ZigZagDetector
-from src.waveconf.pivots.pivot_schema import SwingType, StructureLabel
+from src.btc.pivots.zigzag import ZigZagDetector
+from src.btc.pivots.pivot_schema import SwingType, StructureLabel
 
 def test_synthetic_zigzag():
     """

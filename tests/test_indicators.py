@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.waveconf.ingestion.indicators import (
+from src.btc.ingestion.indicators import (
     add_rsi, add_macd, add_atr, add_bollinger_width, add_price_normalization, add_indicators,
 )
 

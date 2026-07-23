@@ -1,6 +1,6 @@
 import pytest
 
-from src.waveconf.confluence.multi_tf import compute_multi_tf_confluence
+from src.btc.confluence.multi_tf import compute_multi_tf_confluence
 
 
 def test_multi_tf_all_agree_with_overlap():

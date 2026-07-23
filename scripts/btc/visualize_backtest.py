@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 # Add project root to path
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.waveconf.pivots.zigzag import ZigZagDetector
-from src.waveconf.fib_engine.fibonacci import FibonacciEngine
+from src.btc.pivots.zigzag import ZigZagDetector
+from src.btc.fib_engine.fibonacci import FibonacciEngine
 
 def load_layers(timeframe: str) -> pd.DataFrame:
     path = os.path.join(ROOT, "data", "labeled", f"BTC_{timeframe}_labeled.csv")

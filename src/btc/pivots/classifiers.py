@@ -22,8 +22,8 @@ Design:
   - Classifiers are stateless — instantiate once, call repeatedly.
 
 Usage:
-    from src.waveconf.pivots.classifiers import ImpulseClassifier, CorrectionClassifier
-    from src.waveconf.pivots.pivot_schema import PivotPoint
+    from src.btc.pivots.classifiers import ImpulseClassifier, CorrectionClassifier
+    from src.btc.pivots.pivot_schema import PivotPoint
 
     impulse_clf    = ImpulseClassifier()
     correction_clf = CorrectionClassifier()
@@ -40,7 +40,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from src.waveconf.pivots.pivot_schema import PivotPoint, SwingType
+from src.btc.pivots.pivot_schema import PivotPoint, SwingType
 
 
 # ─────────────────────────────────────────────────────────────

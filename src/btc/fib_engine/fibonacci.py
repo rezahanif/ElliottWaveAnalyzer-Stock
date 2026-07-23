@@ -18,7 +18,7 @@ Hard wave rules (W3 min, W2 max, W4 overlap) live in invalidation.py.
 This module only produces targets — it does not validate counts.
 
 Usage:
-    from src.waveconf.fib_engine.fibonacci import FibonacciEngine, FibTarget, ClusterResult
+    from src.btc.fib_engine.fibonacci import FibonacciEngine, FibTarget, ClusterResult
 
     engine = FibonacciEngine()
 

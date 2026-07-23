@@ -37,19 +37,22 @@ from typing import Optional
 
 import yaml
 
-from src.waveconf.fib_engine.trendline import Trendline
+from src.btc.fib_engine.trendline import Trendline
 
 
 # ─────────────────────────────────────────────────────────────
 # Config loading
 # ─────────────────────────────────────────────────────────────
 
-_DEFAULT_CONFIG_PATH = os.path.join("config", "pattern_thresholds.yaml")
-
-
-def _load_thresholds(path: str = _DEFAULT_CONFIG_PATH) -> dict:
+def _load_thresholds(path: str = None) -> dict:
+    if path is None:
+        base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)
+        ))))
+        path = os.path.join(base, "config", "pattern_thresholds.yaml")
     with open(path, "r") as f:
         return yaml.safe_load(f)
+
 
 
 # ─────────────────────────────────────────────────────────────
@@ -80,7 +83,7 @@ class PatternMatch:
 # ─────────────────────────────────────────────────────────────
 
 class PatternDetector:
-    def __init__(self, thresholds: Optional[dict] = None, config_path: str = _DEFAULT_CONFIG_PATH):
+    def __init__(self, thresholds: Optional[dict] = None, config_path: str = None):
         self.t = thresholds if thresholds is not None else _load_thresholds(config_path)
 
     # ── public API ────────────────────────────────────────────

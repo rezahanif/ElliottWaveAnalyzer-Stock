@@ -19,7 +19,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Project root on path
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 # Load .env file
@@ -32,7 +32,7 @@ if env_path.exists():
                 key, val = line.split("=", 1)
                 os.environ[key.strip()] = val.strip().strip('"').strip("'")
 
-from src.waveconf.ingestion.investing_api import (
+from src.btc.ingestion.investing_api import (
     get_economic_calendar,
     is_high_risk,
     get_event_priority,

@@ -1,5 +1,5 @@
-from src.waveconf.fib_engine.trendline import fit_trendline
-from src.waveconf.pivots.pivot_schema import PivotPoint, SwingType, PivotLayer, StructureLabel, WaveDegree
+from src.btc.fib_engine.trendline import fit_trendline
+from src.btc.pivots.pivot_schema import PivotPoint, SwingType, PivotLayer, StructureLabel, WaveDegree
 
 
 def _mk(bar, price):

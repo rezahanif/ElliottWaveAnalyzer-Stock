@@ -30,7 +30,7 @@ config/astro_features.yaml `calibration_notes`.
 
 Usage:
     from datetime import date
-    from src.waveconf.wave_model.astro_features import AstroFeaturesEngine
+    from src.btc.wave_model.astro_features import AstroFeaturesEngine
 
     engine = AstroFeaturesEngine()
     feats = engine.get_daily_features(date(2026, 6, 20))

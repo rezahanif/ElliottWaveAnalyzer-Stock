@@ -24,7 +24,7 @@ Design decisions (v2.0 spec):
     Returns a ZigZagResult with two separate pivot lists.
 
 Usage:
-    from src.waveconf.pivots.zigzag import ZigZagDetector
+    from src.btc.pivots.zigzag import ZigZagDetector
 
     detector = ZigZagDetector(timeframe='4H', min_bars_between_pivots=3)
     result   = detector.run_from_file('data/pivots/BTC_4H_with_layers.json')
@@ -43,7 +43,7 @@ from typing import List, Optional, Tuple
 
 import pandas as pd
 
-from src.waveconf.pivots.pivot_schema import (
+from src.btc.pivots.pivot_schema import (
     PivotLayer,
     PivotPoint,
     StructureLabel,

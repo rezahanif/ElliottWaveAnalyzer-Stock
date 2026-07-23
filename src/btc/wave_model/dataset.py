@@ -32,7 +32,7 @@ genuinely doesn't change between pivot confirmations, so recomputing it
 every bar would just be re-deriving the same answer from the same inputs.
 
 Usage:
-    from src.waveconf.wave_model.dataset import DatasetBuilder
+    from src.btc.wave_model.dataset import DatasetBuilder
 
     builder = DatasetBuilder(asset_timeframe="BTC_1D")
     labeled = builder.build('data/pivots/BTC_1D_with_layers.json')
@@ -52,15 +52,15 @@ from typing import Dict, List
 
 import pandas as pd
 
-from src.waveconf.ingestion.indicators import add_indicators
-from src.waveconf.pivots.zigzag import ZigZagDetector
-from src.waveconf.pivots.pivot_schema import PivotPoint
-from src.waveconf.structure.structure_tokenizer import StructureTokenizer, StructureToken
-from src.waveconf.fib_engine.trendline import fit_trendline
-from src.waveconf.pivots.pattern_detector import PatternDetector
-from src.waveconf.pivots.classifiers import ImpulseClassifier, CorrectionClassifier, ClassificationResult
-from src.waveconf.wave_model.astro_features import AstroFeaturesEngine
-from src.waveconf.ingestion.economic_calender import EconomicCalendarEngine
+from src.btc.ingestion.indicators import add_indicators
+from src.btc.pivots.zigzag import ZigZagDetector
+from src.btc.pivots.pivot_schema import PivotPoint
+from src.btc.structure.structure_tokenizer import StructureTokenizer, StructureToken
+from src.btc.fib_engine.trendline import fit_trendline
+from src.btc.pivots.pattern_detector import PatternDetector
+from src.btc.pivots.classifiers import ImpulseClassifier, CorrectionClassifier, ClassificationResult
+from src.btc.wave_model.astro_features import AstroFeaturesEngine
+from src.btc.ingestion.economic_calender import EconomicCalendarEngine
 
 
 # ─────────────────────────────────────────────────────────────

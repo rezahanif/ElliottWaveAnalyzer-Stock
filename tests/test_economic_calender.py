@@ -1,5 +1,5 @@
 from datetime import date
-from src.waveconf.ingestion.economic_calender import EconomicCalendarEngine
+from src.btc.ingestion.economic_calender import EconomicCalendarEngine
 
 
 def test_engine_loads_config():

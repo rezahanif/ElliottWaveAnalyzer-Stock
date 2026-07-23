@@ -1,5 +1,5 @@
 from datetime import date
-from src.waveconf.wave_model.astro_features import AstroFeaturesEngine
+from src.btc.wave_model.astro_features import AstroFeaturesEngine
 
 
 def test_engine_loads_config():

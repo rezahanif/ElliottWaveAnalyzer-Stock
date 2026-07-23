@@ -1,6 +1,6 @@
 import pytest
-from src.waveconf.pivots.pivot_schema import PivotPoint, PivotLayer, SwingType, StructureLabel, WaveDegree
-from src.waveconf.structure.structure_tokenizer import StructureTokenizer, STRUCTURE_TOKENS
+from src.btc.pivots.pivot_schema import PivotPoint, PivotLayer, SwingType, StructureLabel, WaveDegree
+from src.btc.structure.structure_tokenizer import StructureTokenizer, STRUCTURE_TOKENS
 
 
 def _pivot(bar, price, swing_type, label, bars_from_prior=5, layer=PivotLayer.MACRO):

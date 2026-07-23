@@ -10,7 +10,7 @@ turns a list of PivotPoint into the Trendline that PatternDetector.detect()
 actually requires.
 
 Usage:
-    from src.waveconf.fib_engine.trendline import fit_trendline
+    from src.btc.fib_engine.trendline import fit_trendline
 
     # Resistance: fit ONLY the high-type pivots in your window
     highs = [p for p in window if p.is_high()]
@@ -26,7 +26,7 @@ Usage:
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
-from src.waveconf.pivots.pivot_schema import PivotPoint
+from src.btc.pivots.pivot_schema import PivotPoint
 
 
 @dataclass

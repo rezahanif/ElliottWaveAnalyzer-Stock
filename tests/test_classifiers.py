@@ -1,6 +1,6 @@
 import pytest
-from src.waveconf.pivots.pivot_schema import PivotPoint, SwingType, PivotLayer
-from src.waveconf.pivots.classifiers import ImpulseClassifier, CorrectionClassifier, FailSeverity
+from src.btc.pivots.pivot_schema import PivotPoint, SwingType, PivotLayer
+from src.btc.pivots.classifiers import ImpulseClassifier, CorrectionClassifier, FailSeverity
 
 def make_pivot(bar_index: int, price: float, swing_type: SwingType, layer: PivotLayer = PivotLayer.MACRO) -> PivotPoint:
     return PivotPoint(

@@ -1,10 +1,10 @@
 from datetime import date
 import pytest
 
-from src.waveconf.fib_engine.fibonacci import ClusterResult, FibTarget
-from src.waveconf.confluence.scorer import ConfluenceChecker, TFTPrediction
-from src.waveconf.confluence.cluster_check import compute_probability_mass, is_confluent
-from src.waveconf.confluence.entry_plan import generate_entry_zones
+from src.btc.fib_engine.fibonacci import ClusterResult, FibTarget
+from src.btc.confluence.scorer import ConfluenceChecker, TFTPrediction
+from src.btc.confluence.cluster_check import compute_probability_mass, is_confluent
+from src.btc.confluence.entry_plan import generate_entry_zones
 
 
 def _mk_target(price):

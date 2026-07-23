@@ -46,7 +46,7 @@ this module will never emit them. Downstream classifiers append them
 to the same token stream once wave labels exist.
 
 Usage:
-    from src.waveconf.structure.structure_tokenizer import StructureTokenizer
+    from src.btc.structure.structure_tokenizer import StructureTokenizer
 
     tokenizer = StructureTokenizer()
     macro_tokens = tokenizer.run(zigzag_result.macro)
@@ -62,7 +62,7 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence
 
-from src.waveconf.pivots.pivot_schema import (
+from src.btc.pivots.pivot_schema import (
     PivotLayer,
     PivotPoint,
     StructureLabel,
@@ -404,7 +404,7 @@ class StructureTokenizer:
 
 if __name__ == "__main__":
     import sys
-    from src.waveconf.pivots.pivot_schema import PivotPoint
+    from src.btc.pivots.pivot_schema import PivotPoint
 
     macro_path = sys.argv[1] if len(sys.argv) > 1 else "data/pivots/BTCUSD_1D_pivots_macro.json"
 

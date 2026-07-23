@@ -17,7 +17,7 @@ consistent here so RSI/ATR don't disagree with the rest of the repo on
 what "14-period smoothed" means.
 
 Usage:
-    from src.waveconf.ingestion.indicators import add_indicators
+    from src.btc.ingestion.indicators import add_indicators
 
     df = add_indicators(df)   # adds rsi_14, macd_line, macd_signal,
                                # macd_hist, atr_14, atr_14_norm, bb_width,

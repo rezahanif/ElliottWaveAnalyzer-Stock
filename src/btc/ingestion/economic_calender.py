@@ -21,7 +21,7 @@ meeting dates are not rule-derivable. CPI/PCE/GDP currently ship empty —
 see the YAML file for why and what's needed to fill them in.
 
 Usage:
-    from src.waveconf.ingestion.economic_calender import EconomicCalendarEngine
+    from src.btc.ingestion.economic_calender import EconomicCalendarEngine
 
     engine = EconomicCalendarEngine()
     ctx = engine.get_context(date(2026, 6, 20))

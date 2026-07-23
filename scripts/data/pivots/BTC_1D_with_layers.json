@@ -1,0 +1,1 @@
+{"asset": "BTCUSD", "timeframe": "1D", "columns": ["timestamp_ms", "date", "open", "high", "low", "close", "volume", "wall_street_threshold_pct", "behavioral_threshold_pct"], "data": []}

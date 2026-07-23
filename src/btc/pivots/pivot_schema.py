@@ -13,7 +13,7 @@ This file contains NO logic. It is a data contract only.
 Import it wherever a list of pivots is consumed or produced.
 
 Usage:
-    from src.waveconf.pivots.pivot_schema import PivotPoint, SwingType, WaveDegree, PivotLayer
+    from src.btc.pivots.pivot_schema import PivotPoint, SwingType, WaveDegree, PivotLayer
 """
 
 from __future__ import annotations

@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.waveconf.wave_model.model import (
+from src.btc.wave_model.model import (
     prepare_df_for_tft,
     create_tft_dataset,
     build_tft_model,
@@ -121,7 +121,7 @@ def train_tft(
         monitor="val_loss", min_delta=1e-4, patience=3, verbose=True, mode="min"
     )
     checkpoint_callback = ModelCheckpoint(
-        dirpath="src/waveconf/wave_model/checkpoints",
+        dirpath="src/btc/wave_model/checkpoints",
         filename="tft_checkpoint",
         save_top_k=1,
         monitor="val_loss",

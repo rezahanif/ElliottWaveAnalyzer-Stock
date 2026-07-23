@@ -33,8 +33,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
 
-from src.waveconf.pivots.zigzag import ZigZagDetector, _ZigZagState
-from src.waveconf.pivots.pivot_schema import SwingType, PivotLayer, WaveDegree
+from src.btc.pivots.zigzag import ZigZagDetector, _ZigZagState
+from src.btc.pivots.pivot_schema import SwingType, PivotLayer, WaveDegree
 
 
 # ─────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ def audit_running_extremes(df: pd.DataFrame, timeframe: str = '1D') -> pd.DataFr
     records = []
 
     # Manually replay the macro state machine
-    from src.waveconf.pivots.pivot_schema import PivotLayer, WaveDegree
+    from src.btc.pivots.pivot_schema import PivotLayer, WaveDegree
     sm = _ZigZagState(PivotLayer.MACRO, min_bars=3, degree=WaveDegree.INTERMEDIATE)
 
     confirmed_bars = set()

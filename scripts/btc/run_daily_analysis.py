@@ -51,7 +51,7 @@ import numpy as np
 import pandas as pd
 
 # ── project root on path ────────────────────────────────────────────────────
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 # Load .env file if it exists to populate environment variables
@@ -65,9 +65,9 @@ if env_path.exists():
                 os.environ[key.strip()] = val.strip().strip('"').strip("'")
 
 
-from src.waveconf.pivots.zigzag import ZigZagDetector
-from src.waveconf.pivots.pivot_schema import SwingType
-from src.waveconf.fib_engine.fibonacci import FibonacciEngine
+from src.btc.pivots.zigzag import ZigZagDetector
+from src.btc.pivots.pivot_schema import SwingType
+from src.btc.fib_engine.fibonacci import FibonacciEngine
 
 # Optional heavy imports — guarded to avoid hard failures at import time
 try:
@@ -368,7 +368,7 @@ def prep_inference_window(
     Runs the official DatasetBuilder on history, then appends future rows
     populated with future timestamps and known-future features (astro + calendar).
     """
-    from src.waveconf.wave_model.dataset import DatasetBuilder
+    from src.btc.wave_model.dataset import DatasetBuilder
 
     # 1. Build features for all historical candles
     builder = DatasetBuilder(
@@ -441,7 +441,7 @@ def run_tft_inference(
         return None
 
     try:
-        from src.waveconf.wave_model.infer import predict_tft
+        from src.btc.wave_model.infer import predict_tft
         result = predict_tft(window_df, model_path)
         if result:
             print(f"  [tft] Inference complete. q50_30d=${result.get('q50_30d', 0):,.0f}")
@@ -968,7 +968,7 @@ def main():
         print("\n" + "=" * 60)
         print("Running Multi-Timeframe Confluence")
         print("=" * 60)
-        from src.waveconf.confluence.multi_tf import compute_multi_tf_confluence
+        from src.btc.confluence.multi_tf import compute_multi_tf_confluence
         report = compute_multi_tf_confluence(tf_results)
         print(f"  [multi-tf] Dominant Bias: {report.dominant_bias.upper()}")
         print(f"  [multi-tf] Agreement: {report.agreement_count}/{len(tf_results)}")

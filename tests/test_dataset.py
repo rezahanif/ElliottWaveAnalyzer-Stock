@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from src.waveconf.wave_model.dataset import DatasetBuilder
+from src.btc.wave_model.dataset import DatasetBuilder
 
 
 def _write_enriched_json(path, data, asset="BTCUSD", timeframe="1D"):
@@ -126,8 +126,8 @@ def test_known_future_is_computable_for_dates_with_no_price_data():
     OHLCV pipeline.
     """
     from datetime import date, timedelta
-    from src.waveconf.wave_model.astro_features import AstroFeaturesEngine
-    from src.waveconf.ingestion.economic_calender import EconomicCalendarEngine
+    from src.btc.wave_model.astro_features import AstroFeaturesEngine
+    from src.btc.ingestion.economic_calender import EconomicCalendarEngine
 
     far_future = date.today() + timedelta(days=365 * 2)
     astro = AstroFeaturesEngine().get_daily_features(far_future)

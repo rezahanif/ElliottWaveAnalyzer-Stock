@@ -21,7 +21,7 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
 # Set up project root
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 # Load environment variables

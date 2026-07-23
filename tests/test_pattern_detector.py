@@ -1,6 +1,6 @@
 import pytest
-from src.waveconf.fib_engine.trendline import Trendline
-from src.waveconf.pivots.pattern_detector import PatternDetector
+from src.btc.fib_engine.trendline import Trendline
+from src.btc.pivots.pattern_detector import PatternDetector
 
 
 def test_channel_ascending():

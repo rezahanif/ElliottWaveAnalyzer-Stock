@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from src.waveconf.wave_model.model import prepare_df_for_tft
+from src.btc.wave_model.model import prepare_df_for_tft
 
 
 def predict_tft(

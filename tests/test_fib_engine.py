@@ -1,6 +1,6 @@
 import pytest
-from src.waveconf.fib_engine.fibonacci import FibonacciEngine, FibTarget, ClusterResult
-from src.waveconf.fib_engine.invalidation import is_invalidated
+from src.btc.fib_engine.fibonacci import FibonacciEngine, FibTarget, ClusterResult
+from src.btc.fib_engine.invalidation import is_invalidated
 
 def test_fibonacci_engine_init():
     engine = FibonacciEngine()
