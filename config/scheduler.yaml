@@ -49,25 +49,47 @@ jobs:
     type: oneshot
 
   # ── Stock Pipeline (Phase 6) ──────────────────────────────
-  # stock-morning:
-  #   description: "BMRI Morning Analysis"
-  #   schedule: "01:30 UTC"        # 08:30 WIB, weekdays only
-  #   weekdays_only: true
-  #   idx_holiday_aware: true
-  #   command: ...
+  stock-morning:
+    description: "BMRI Morning Analysis Briefing"
+    schedule: "01:30 UTC"        # 08:30 WIB, weekdays only
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/stock_orchestrator.py
+      --action morning
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
 
-  # stock-midday:
-  #   description: "BMRI Midday Update"
-  #   schedule: "05:00 UTC"        # 12:00 WIB
-  #   weekdays_only: true
-  #   idx_holiday_aware: true
+  stock-midday:
+    description: "BMRI Midday Context Update"
+    schedule: "05:00 UTC"        # 12:00 WIB, weekdays only
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/stock_orchestrator.py
+      --action midday
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
 
-  # stock-closing:
-  #   description: "BMRI Closing Analysis"
-  #   schedule: "09:15 UTC"        # 16:15 WIB
-  #   weekdays_only: true
-  #   idx_holiday_aware: true
+  stock-closing:
+    description: "BMRI Closing Signal Analysis"
+    schedule: "09:15 UTC"        # 16:15 WIB, weekdays only
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/stock_orchestrator.py
+      --action closing
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
 
-  # stock-weekly:
-  #   description: "BMRI Weekly Report"
-  #   schedule: "02:00 UTC SAT"    # 09:00 WIB Saturday
+  stock-weekly:
+    description: "BMRI Weekly Strategy Review"
+    schedule: "02:00 UTC"        # 09:00 WIB Saturday
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/stock_orchestrator.py
+      --action weekly
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
+
