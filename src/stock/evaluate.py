@@ -131,12 +131,14 @@ def backtest_predictions(
     assert len(median_pred) == len(actuals), \
         f"Length mismatch: pred={len(median_pred)}, actual={len(actuals)}"
 
-    # Filter to test period only (time_idx >= test_cutoff)
-    test_mask = time_idx_vals >= test_cutoff
+    # Filter to test period only — exclude samples beyond data boundary
+    # (allow_missing_timesteps creates phantom samples at the end with no actual target)
+    max_data_idx = df_prepared["time_idx"].max()
+    valid_mask = (time_idx_vals >= test_cutoff) & (time_idx_vals <= max_data_idx)
 
     results = pd.DataFrame({
-        "prediction": median_pred[test_mask],
-        "actual": actuals[test_mask],
+        "prediction": median_pred[valid_mask],
+        "actual": actuals[valid_mask],
     })
 
     return results

@@ -14,7 +14,7 @@ from typing import Optional, Dict, Any
 import numpy as np
 import pandas as pd
 
-from src.btc.ingestion.indicators import add_indicators
+from src.stock.features.indicators import add_stock_indicators
 from src.stock.features.schema import FeatureSchema, get_default_schema
 from src.stock.analyzer import StockAnalyzer
 from src.stock.features.market_context import generate_market_context
@@ -40,8 +40,8 @@ class FeatureBuilder:
         self.analyzer = StockAnalyzer(symbol, "1D")
     
     def build_technical(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Compute technical indicators using existing BTC implementation."""
-        df = add_indicators(df)
+        """Compute technical indicators using stock-specific implementation."""
+        df = add_stock_indicators(df)
         return df
     
     def build_wave(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -189,6 +189,14 @@ class FeatureBuilder:
                     df[feat] = "unknown"
                 else:
                     df[feat] = 0.0
+
+        # Drop warmup-period rows where indicators are NaN (EMA200 needs 200 bars)
+        # Per Addendum: don't invent data — drop rows with insufficient lookback
+        before = len(df)
+        df = df.dropna(subset=self.schema.numerical_features).reset_index(drop=True)
+        dropped = before - len(df)
+        if dropped > 0:
+            logger.info(f"Dropped {dropped} warmup-period rows (NaN indicators)")
         
         return df
     
