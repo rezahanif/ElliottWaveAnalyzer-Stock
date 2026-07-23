@@ -107,6 +107,23 @@ def prepare_time_series_dataset(
     categorical_encoders = {}
     for feat in time_varying_known_categoricals + group_ids:
         categorical_encoders[feat] = NaNLabelEncoder(add_nan=True)
+
+    # Per-feature scalers — critical for features spanning 9 orders of magnitude
+    # (obv in billions vs target_pct ~0.01). Without this, gradients are dominated
+    # by large-magnitude features and model collapses to predicting near-constant mean.
+    # RobustScaler (median/IQR) for heavy-tailed features like obv/volume/price levels.
+    # StandardScaler for bounded indicators like rsi/adx (0-100 range).
+    from sklearn.preprocessing import RobustScaler, StandardScaler
+    heavy_tailed = {"obv", "volume", "ema_20", "ema_50", "ema_200",
+                    "bb_upper", "bb_lower", "close", "open", "high", "low"}
+    scalers = {}
+    for feat in time_varying_known_reals + time_varying_unknown_reals:
+        if feat == "target_pct":
+            continue  # target handled by add_target_scales
+        if feat in heavy_tailed:
+            scalers[feat] = RobustScaler()
+        else:
+            scalers[feat] = StandardScaler()
     
     # Create dataset
     training_cutoff = len(df) - (config.val_months + config.test_months) * 21  # ~21 trading days/month
@@ -125,6 +142,7 @@ def prepare_time_series_dataset(
         time_varying_known_categoricals=time_varying_known_categoricals,
         time_varying_unknown_reals=time_varying_unknown_reals,
         categorical_encoders=categorical_encoders,
+        scalers=scalers,
         add_relative_time_idx=True,
         add_target_scales=True,
         add_encoder_length=True,
