@@ -99,16 +99,21 @@ class DatasetBuilder:
         pattern_window_pivots: int = 8,
         astro_config_path: str = "config/astro_features.yaml",
         calendar_config_path: str = "config/economic_calender.yaml",
+        include_astro: bool = True,
+        include_calendar: bool = True,
     ):
         self.asset_timeframe = asset_timeframe
         self.pattern_window_pivots = pattern_window_pivots
+        self.include_astro = include_astro
+        self.include_calendar = include_calendar
 
         self.pattern_detector = PatternDetector()
         self.impulse_clf = ImpulseClassifier()
         self.correction_clf = CorrectionClassifier()
         self.tokenizer = StructureTokenizer()
-        self.astro_engine = AstroFeaturesEngine(astro_config_path)
-        self.calendar_engine = EconomicCalendarEngine(calendar_config_path)
+        
+        self.astro_engine = AstroFeaturesEngine(astro_config_path) if include_astro else None
+        self.calendar_engine = EconomicCalendarEngine(calendar_config_path) if include_calendar else None
 
         self.pattern_type_map: Dict[str, int] = {"none": 0}
         self.wave_type_map: Dict[str, int] = {"none": 0}
@@ -290,28 +295,40 @@ class DatasetBuilder:
     def _attach_known_future(self, df: pd.DataFrame) -> pd.DataFrame:
         dates = pd.to_datetime(df["timestamp_ms"], unit="ms", utc=True).dt.date
 
-        astro_rows = [self.astro_engine.get_daily_features(d).to_flat_dict() for d in dates]
-        astro_df = pd.DataFrame(astro_rows, index=df.index)
-        for col in ["lunar_phase_sin", "lunar_phase_cos", "lunar_anomalistic_normalized",
-                    "lunar_node_distance", "mercury_retrograde"]:
-            df[col] = astro_df[col]
-        for aspect_col in ["aspect_jupiter_uranus_intensity", "aspect_mars_uranus_intensity"]:
-            df[aspect_col] = astro_df[aspect_col] if aspect_col in astro_df.columns else 0.0
+        if self.include_astro and self.astro_engine is not None:
+            astro_rows = [self.astro_engine.get_daily_features(d).to_flat_dict() for d in dates]
+            astro_df = pd.DataFrame(astro_rows, index=df.index)
+            for col in ["lunar_phase_sin", "lunar_phase_cos", "lunar_anomalistic_normalized",
+                        "lunar_node_distance", "mercury_retrograde"]:
+                df[col] = astro_df[col]
+            for aspect_col in ["aspect_jupiter_uranus_intensity", "aspect_mars_uranus_intensity"]:
+                df[aspect_col] = astro_df[aspect_col] if aspect_col in astro_df.columns else 0.0
+        else:
+            for col in ["lunar_phase_sin", "lunar_phase_cos", "lunar_anomalistic_normalized",
+                        "lunar_node_distance", "mercury_retrograde",
+                        "aspect_jupiter_uranus_intensity", "aspect_mars_uranus_intensity"]:
+                df[col] = 0.0
 
-        cal_rows = []
-        for d in dates:
-            ctx = self.calendar_engine.get_context(d)
-            cal_rows.append({
-                "days_to_fomc": ctx.days_to_fomc if ctx.days_to_fomc is not None else 999,
-                "days_since_last_fomc": ctx.days_since_last_fomc if ctx.days_since_last_fomc is not None else 999,
-                "days_to_nfp": ctx.days_to_nfp if ctx.days_to_nfp is not None else 999,
-                "high_impact_within_5d": int(ctx.high_impact_within_5d),
-                "high_impact_within_2d": int(ctx.high_impact_within_2d),
-                "post_event_window": int(ctx.post_event_window),
-            })
-        cal_df = pd.DataFrame(cal_rows, index=df.index)
-        for col in cal_df.columns:
-            df[col] = cal_df[col]
+        if self.include_calendar and self.calendar_engine is not None:
+            cal_rows = []
+            for d in dates:
+                ctx = self.calendar_engine.get_context(d)
+                cal_rows.append({
+                    "days_to_fomc": ctx.days_to_fomc if ctx.days_to_fomc is not None else 999,
+                    "days_since_last_fomc": ctx.days_since_last_fomc if ctx.days_since_last_fomc is not None else 999,
+                    "days_to_nfp": ctx.days_to_nfp if ctx.days_to_nfp is not None else 999,
+                    "high_impact_within_5d": int(ctx.high_impact_within_5d),
+                    "high_impact_within_2d": int(ctx.high_impact_within_2d),
+                    "post_event_window": int(ctx.post_event_window),
+                })
+            cal_df = pd.DataFrame(cal_rows, index=df.index)
+            for col in cal_df.columns:
+                df[col] = cal_df[col]
+        else:
+            for col in ["days_to_fomc", "days_since_last_fomc", "days_to_nfp"]:
+                df[col] = 999.0
+            for col in ["high_impact_within_5d", "high_impact_within_2d", "post_event_window"]:
+                df[col] = 0.0
 
         return df
 

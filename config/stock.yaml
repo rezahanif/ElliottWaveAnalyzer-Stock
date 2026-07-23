@@ -21,3 +21,12 @@ apis:
     api_key: ""  # Load dynamically via env if needed
   twelve_data:
     api_key: ""  # Load dynamically via env if needed
+
+fundamentals:
+  BMRI.JK:
+    pe_ratio: 10.8
+    pb_ratio: 2.05
+    roe: 0.195
+    div_yield: 0.048
+    revenue_growth: 0.10
+
