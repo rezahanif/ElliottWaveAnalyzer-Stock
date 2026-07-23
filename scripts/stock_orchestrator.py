@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 from src.stock.collectors.idx_holidays import is_idx_trading_day
 from src.stock.telegram.handlers import handle_bmri, handle_report
 from src.shared.telegram.client import send_telegram
+import yaml
 
 # Load .env file if it exists to populate environment variables
 try:
@@ -32,11 +33,26 @@ except ImportError:
     pass
 
 
+def load_stock_telegram_config() -> tuple[Optional[str], Optional[list[str]]]:
+    config_path = ROOT / "config" / "stock.yaml"
+    if not config_path.exists():
+        return None, None
+    try:
+        with open(config_path, "r") as f:
+            cfg = yaml.safe_load(f)
+        tele = cfg.get("telegram", {})
+        return tele.get("bot_token"), tele.get("chat_ids")
+    except Exception as e:
+        print(f"Warning: Failed to load stock Telegram config: {e}", file=sys.stderr)
+        return None, None
+
+
 def run_closing_analysis(dry_run: bool = False):
     """Run full BMRI closing analysis and send alert."""
     print("Running BMRI closing analysis...")
     msg = handle_bmri("", [])
-    send_telegram(msg, dry_run=dry_run, label="stock-alert")
+    token, ids = load_stock_telegram_config()
+    send_telegram(msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
 
 
 def run_morning_update(dry_run: bool = False):
@@ -48,7 +64,8 @@ def run_morning_update(dry_run: bool = False):
         "🌅 <b>BMRI MORNING MARKET BRIEFING</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     )
-    send_telegram(header + msg, dry_run=dry_run, label="stock-alert")
+    token, ids = load_stock_telegram_config()
+    send_telegram(header + msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
 
 
 def run_weekly_review(dry_run: bool = False):
@@ -60,7 +77,8 @@ def run_weekly_review(dry_run: bool = False):
         "📅 <b>BMRI WEEKLY STRATEGY REVIEW</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     )
-    send_telegram(header + msg, dry_run=dry_run, label="stock-alert")
+    token, ids = load_stock_telegram_config()
+    send_telegram(header + msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
 
 
 def main():
