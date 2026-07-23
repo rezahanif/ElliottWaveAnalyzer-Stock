@@ -19,6 +19,7 @@ from src.stock.collectors.fundamentals import fetch_fundamentals
 from src.stock.collectors.news import fetch_news_and_sentiment
 from src.stock.features.market_context import generate_market_context
 from src.stock.forecast.rule_engine import evaluate_rules
+from src.stock.forecast.confidence import compute_confidence
 
 logger = logging.getLogger("stock_telegram_handlers")
 
@@ -57,6 +58,32 @@ def handle_bmri(chat_id: str, args: List[str]) -> str:
         news_sentiment=news_sentiment,
     )
     
+    # 6. Confidence Model
+    fusion_result = analysis_res.get("fusion")
+    confidence = compute_confidence(
+        analysis_res=analysis_res,
+        market_ctx=market_ctx,
+        fundamentals=fundamentals,
+        news_sentiment=news_sentiment,
+        fusion_result=fusion_result,
+    )
+    
+    # 7. AI Forecast status line
+    ai_status = analysis_res.get("ai_forecast_status", "unavailable")
+    ai_reason = analysis_res.get("ai_forecast_reason", "Unknown")
+    if ai_status == "enabled":
+        ai_line = f"🤖 AI Forecast: <b>Enabled</b> — {ai_reason}"
+    else:
+        ai_line = f"🤖 AI Forecast: <b>Unavailable</b> — Reason: {ai_reason}"
+    
+    # Format confidence components
+    comps = confidence["components"]
+    w = confidence["weights"]
+    conf_lines = []
+    for k in ["technical", "wave", "market", "fundamental", "news", "ai_forecast"]:
+        conf_lines.append(f"  • {k.title():<13} score={comps[k]:.2f}  weight={w[k]:.2f}")
+    conf_text = "\n".join(conf_lines)
+    
     # Format Response Message
     signal = forecast["signal"]
     signal_emoji = {"BUY": "🟢 BUY", "SELL": "🔴 SELL", "WATCH": "🟡 WATCH"}.get(signal, signal)
@@ -72,10 +99,15 @@ def handle_bmri(chat_id: str, args: List[str]) -> str:
         f"🛑 Invalidation: <b>IDR {forecast['invalidation'] or 0:,.2f}</b>\n"
         f"📐 Fibonacci Zone: <code>{forecast['fib_zone']}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{ai_line}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🔍 <b>Market Context Cascade:</b>\n"
         f"• IHSG Bias: <b>{market_ctx['ihsg']['bias']}</b>\n"
         f"• Sector Outperforming: <b>{market_ctx['sector']['outperforming_market']}</b>\n"
         f"• Stock Outperforming: <b>{market_ctx['stock']['outperforming_sector']}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📊 <b>Confidence Model (Overall: {confidence['overall']:.2f})</b>\n"
+        f"<code>{conf_text}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"💡 <b>Reasoning Details:</b>\n"
         f"{reasons_text}\n"
@@ -88,8 +120,20 @@ def handle_report(chat_id: str, args: List[str]) -> str:
     fundamentals = fetch_fundamentals("BMRI.JK")
     news = fetch_news_and_sentiment("BMRI.JK")
     
+    # Check AI forecast status (no full analysis needed — just checkpoint check)
+    from src.stock.predict import predict_tft, CHECKPOINT_DIR
+    from pathlib import Path
+    safe_sym = "BMRI_JK"
+    ckpt = CHECKPOINT_DIR / f"{safe_sym}.ckpt"
+    if ckpt.exists():
+        ai_line = "🤖 AI Forecast: <b>Enabled</b> — TFT model active"
+    else:
+        ai_line = "🤖 AI Forecast: <b>Unavailable</b> — Reason: No trained BMRI checkpoint"
+    
     msg = (
         f"📝 <b>BMRI FUNDAMENTAL & SENTIMENT REPORT</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{ai_line}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📈 <b>Fundamentals:</b>\n"
         f"• P/E Ratio: <b>{fundamentals['pe_ratio']:.1f}</b>\n"
