@@ -1,0 +1,1 @@
+# Stock collectors package.

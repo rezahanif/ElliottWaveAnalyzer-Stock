@@ -1,0 +1,23 @@
+# Configuration for Stock Swing Trading Platform
+# ─────────────────────────────────────────────────────────────
+
+symbols:
+  - symbol: "BMRI.JK"
+    name: "Bank Mandiri (Persero) Tbk"
+    currency: "IDR"
+    timeframes:
+      - "1D"
+
+indices:
+  ihsg: "^JKSE"
+  financial_sector: "^JKLQ45"  # IDX LQ45 Index as liquid/financial proxy
+
+paths:
+  data_dir: "data/stock"
+  predictions_db: "data/predictions.db"
+
+apis:
+  alpha_vantage:
+    api_key: ""  # Load dynamically via env if needed
+  twelve_data:
+    api_key: ""  # Load dynamically via env if needed
