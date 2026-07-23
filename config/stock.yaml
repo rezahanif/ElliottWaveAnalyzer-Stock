@@ -20,7 +20,6 @@ telegram:
   bot_token: "8529642967:REDACTED"
   chat_ids:
     - "1179211752"
-    - "1713783811"
 
 apis:
   alpha_vantage:
