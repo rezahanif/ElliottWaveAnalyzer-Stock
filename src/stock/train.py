@@ -100,6 +100,13 @@ def prepare_time_series_dataset(
     for feat, values in schema.categorical_features.items():
         if feat in df.columns:
             time_varying_known_categoricals.append(feat)
+
+    # Use NaNLabelEncoder(add_nan=True) for all categoricals — handles unseen
+    # categories during inference without IndexError
+    from pytorch_forecasting.data import NaNLabelEncoder
+    categorical_encoders = {}
+    for feat in time_varying_known_categoricals + group_ids:
+        categorical_encoders[feat] = NaNLabelEncoder(add_nan=True)
     
     # Create dataset
     training_cutoff = len(df) - (config.val_months + config.test_months) * 21  # ~21 trading days/month
@@ -117,6 +124,7 @@ def prepare_time_series_dataset(
         time_varying_known_reals=time_varying_known_reals,
         time_varying_known_categoricals=time_varying_known_categoricals,
         time_varying_unknown_reals=time_varying_unknown_reals,
+        categorical_encoders=categorical_encoders,
         add_relative_time_idx=True,
         add_target_scales=True,
         add_encoder_length=True,
@@ -232,18 +240,10 @@ def train_tft(
         val_dataloaders=val_dataloader,
     )
     
-    # Save checkpoint manually
+    # Save Lightning-native checkpoint (Option A — predict.py uses load_from_checkpoint)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({
-        'model_state_dict': tft.state_dict(),
-        'config': {
-            'hidden_size': config.hidden_size,
-            'attention_head_size': config.attention_head_size,
-            'dropout': config.dropout,
-            'hidden_continuous_size': config.hidden_continuous_size,
-        }
-    }, checkpoint_path)
-    logger.info(f"Saved checkpoint to {checkpoint_path}")
+    trainer.save_checkpoint(checkpoint_path)
+    logger.info(f"Saved Lightning checkpoint to {checkpoint_path}")
     
     return {
         "checkpoint_path": str(checkpoint_path),
