@@ -150,34 +150,7 @@ def record_alert(occurrence_id: int | None, event_id: int | None, occurrence_tim
 # Telegram Alert Broadcaster
 # ─────────────────────────────────────────────────────────────
 
-def send_telegram(message: str, dry_run: bool = False):
-    """Send Telegram message to all configured chat IDs."""
-    if dry_run:
-        print("\n[telegram] DRY RUN — Message content:")
-        print(message)
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        return
-
-    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_ids_str = os.environ.get("TELEGRAM_CHAT_IDS") or os.environ.get("TELEGRAM_CHAT_ID")
-
-    if not bot_token or not chat_ids_str:
-        logger.warning("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_IDS not configured. Alert printed to console.")
-        print(message)
-        return
-
-    chat_ids = [cid.strip() for cid in chat_ids_str.split(",") if cid.strip()]
-
-    import urllib.request
-    for chat_id in chat_ids:
-        try:
-            url  = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            data = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "HTML"}).encode()
-            req  = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            urllib.request.urlopen(req, timeout=10)
-            logger.info(f"Telegram notification sent successfully to {chat_id} ✅")
-        except Exception as e:
-            logger.error(f"Failed to send Telegram message to {chat_id}: {e}")
+from src.shared.telegram.client import send_telegram
 
 
 # ─────────────────────────────────────────────────────────────

@@ -1,0 +1,73 @@
+# Scheduler job registry.
+# Single source of truth for all scheduled jobs across pipelines.
+# Systemd .timer/.service files are generated from this config.
+#
+# Times use UTC. Comments show local equivalent (UTC+7 / WIB).
+
+jobs:
+  # ── BTC Pipeline ──────────────────────────────────────────
+  elliott-daily:
+    description: "Elliott Wave Daily & Multi-TF Confluence Analyzer"
+    schedule: "00:05 UTC"          # 07:05 WIB
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/btc/run_daily_analysis.py
+      --timeframe 1D 4H
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
+
+  elliott-4h:
+    description: "Elliott Wave 4H Timeframe Analyzer"
+    schedule: "04:05,08:05,12:05,16:05,20:05 UTC"  # 11:05,15:05,19:05,23:05,03:05 WIB
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/btc/run_daily_analysis.py
+      --timeframe 4H
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
+
+  elliott-notifier:
+    description: "Economic Event Notifier (every 5 min)"
+    schedule: "*/5 * * * *"        # every 5 minutes
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/btc/economic_notifier.py
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
+
+  elliott-astro:
+    description: "Astronomical Event Daily Notification"
+    schedule: "17:00 UTC"          # 00:00 WIB
+    command: >
+      /home/rezaserver/miniconda3/envs/elliott/bin/python
+      /home/rezaserver/project/ElliottWaveAnalyzer/scripts/btc/astro_notifier.py
+    user: rezaserver
+    workdir: /home/rezaserver/project/ElliottWaveAnalyzer
+    type: oneshot
+
+  # ── Stock Pipeline (Phase 6) ──────────────────────────────
+  # stock-morning:
+  #   description: "BMRI Morning Analysis"
+  #   schedule: "01:30 UTC"        # 08:30 WIB, weekdays only
+  #   weekdays_only: true
+  #   idx_holiday_aware: true
+  #   command: ...
+
+  # stock-midday:
+  #   description: "BMRI Midday Update"
+  #   schedule: "05:00 UTC"        # 12:00 WIB
+  #   weekdays_only: true
+  #   idx_holiday_aware: true
+
+  # stock-closing:
+  #   description: "BMRI Closing Analysis"
+  #   schedule: "09:15 UTC"        # 16:15 WIB
+  #   weekdays_only: true
+  #   idx_holiday_aware: true
+
+  # stock-weekly:
+  #   description: "BMRI Weekly Report"
+  #   schedule: "02:00 UTC SAT"    # 09:00 WIB Saturday

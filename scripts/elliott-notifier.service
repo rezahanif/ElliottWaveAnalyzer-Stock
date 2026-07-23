@@ -6,4 +6,4 @@ After=network.target
 Type=oneshot
 User=rezaserver
 WorkingDirectory=/home/rezaserver/ElliottWaveAnalyzer
-ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python /home/rezaserver/ElliottWaveAnalyzer/scripts/economic_notifier.py
+ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python /home/rezaserver/ElliottWaveAnalyzer/scripts/btc/economic_notifier.py

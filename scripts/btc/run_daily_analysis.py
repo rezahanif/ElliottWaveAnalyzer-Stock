@@ -682,32 +682,7 @@ def write_prediction(db_path: str, record: Dict):
 # Step 10: Telegram alert
 # ─────────────────────────────────────────────────────────────
 
-def send_telegram(message: str, dry_run: bool = False):
-    """Send Telegram message to all configured chat IDs. Skips silently in dry-run mode."""
-    if dry_run:
-        print("\n  [telegram] DRY RUN — message that would be sent:")
-        print("  " + "\n  ".join(message.split("\n")))
-        return
-
-    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_ids_str = os.environ.get("TELEGRAM_CHAT_IDS") or os.environ.get("TELEGRAM_CHAT_ID")
-
-    if not bot_token or not chat_ids_str:
-        print("  [telegram] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_IDS not set — skipping alert")
-        return
-
-    chat_ids = [cid.strip() for cid in chat_ids_str.split(",") if cid.strip()]
-
-    import urllib.request
-    for chat_id in chat_ids:
-        try:
-            url  = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            data = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "HTML"}).encode()
-            req  = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            urllib.request.urlopen(req, timeout=10)
-            print(f"  [telegram] Alert sent to {chat_id} ✅")
-        except Exception as e:
-            print(f"  [telegram] Failed to send to {chat_id}: {e}")
+from src.shared.telegram.client import send_telegram
 
 
 

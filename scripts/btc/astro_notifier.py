@@ -439,32 +439,7 @@ def generate_weekly_summary(start_date: date) -> str:
 # CLI Entry Point
 # ─────────────────────────────────────────────────────────────
 
-def send_telegram(message: str, dry_run: bool = False):
-    """Broadcasting utility."""
-    if dry_run:
-        print("\n[telegram] DRY RUN — Message content:")
-        print(message)
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        return
-
-    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_ids_str = os.environ.get("TELEGRAM_CHAT_IDS") or os.environ.get("TELEGRAM_CHAT_ID")
-
-    if not bot_token or not chat_ids_str:
-        print(message)
-        return
-
-    chat_ids = [cid.strip() for cid in chat_ids_str.split(",") if cid.strip()]
-
-    import urllib.request
-    for chat_id in chat_ids:
-        try:
-            url  = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            data = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "HTML"}).encode()
-            req  = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            urllib.request.urlopen(req, timeout=10)
-        except Exception as e:
-            print(f"Failed to send to {chat_id}: {e}", file=sys.stderr)
+from src.shared.telegram.client import send_telegram
 
 
 def main():

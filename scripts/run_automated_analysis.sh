@@ -38,10 +38,10 @@ echo "======================================================================" | 
 # If no arguments are provided, default to running both 1D and 4H
 if [ $# -eq 0 ]; then
     echo "ℹ️ No arguments specified. Defaulting to: --timeframe 1D 4H" | tee -a data/automation.log
-    python scripts/run_daily_analysis.py --timeframe 1D 4H 2>&1 | tee -a data/automation.log
+    python scripts/btc/run_daily_analysis.py --timeframe 1D 4H 2>&1 | tee -a data/automation.log
 else
     echo "ℹ️ Running with arguments: $@" | tee -a data/automation.log
-    python scripts/run_daily_analysis.py "$@" 2>&1 | tee -a data/automation.log
+    python scripts/btc/run_daily_analysis.py "$@" 2>&1 | tee -a data/automation.log
 fi
 
 # Print exit timestamp

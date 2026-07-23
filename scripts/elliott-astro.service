@@ -6,4 +6,4 @@ After=network.target
 Type=oneshot
 User=rezaserver
 WorkingDirectory=/home/rezaserver/project/ElliottWaveAnalyzer
-ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python /home/rezaserver/project/ElliottWaveAnalyzer/scripts/astro_notifier.py
+ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python /home/rezaserver/project/ElliottWaveAnalyzer/scripts/btc/astro_notifier.py
