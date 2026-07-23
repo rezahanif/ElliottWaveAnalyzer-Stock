@@ -38,7 +38,20 @@ def predict_tft(
 
         # Load model using CPU to ensure low memory footprint and compatibility
         device = torch.device("cpu")
-        model = TemporalFusionTransformer.load_from_checkpoint(model_path, map_location=device, weights_only=False)
+        
+        # Strip the monotone_constaints typo from checkpoint hyperparameters to prevent load error
+        checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+        if "hyper_parameters" in checkpoint:
+            checkpoint["hyper_parameters"].pop("monotone_constaints", None)
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".ckpt", delete=False) as tmp:
+            torch.save(checkpoint, tmp.name)
+            tmp_path = tmp.name
+        try:
+            model = TemporalFusionTransformer.load_from_checkpoint(tmp_path, map_location=device, weights_only=False)
+        finally:
+            os.remove(tmp_path)
+            
         model.eval()
 
         # Preprocess inference dataframe
