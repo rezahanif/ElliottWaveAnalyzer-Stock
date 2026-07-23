@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Elliott Wave 4H Analyzer 5 minutes after 4H candle closes (omits 00:00 UTC)
+
+[Timer]
+# Runs at 04:05, 08:05, 12:05, 16:05, and 20:05 UTC every day
+OnCalendar=*-*-* 04,08,12,16,20:05:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

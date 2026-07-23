@@ -1,0 +1,33 @@
+[
+  {
+    "if": "A=5_and_B=3_and_C=5",
+    "classify_as": "zigzag_family"
+  },
+  {
+    "if": "A=3_and_B=3_and_C=5",
+    "classify_as": "flat_family"
+  },
+  {
+    "if": "all_legs_are_3_wave",
+    "classify_as": "triangle_family"
+  },
+  {
+    "if": "contains_X_wave",
+    "classify_as": "combination_family"
+  },
+  {
+    "if": "B_exceeds_A_start",
+    "candidate_patterns": [
+      "expanded_flat",
+      "running_flat",
+      "running_triangle"
+    ]
+  },
+  {
+    "if": "B_does_not_exceed_A_start",
+    "candidate_patterns": [
+      "zigzag",
+      "regular_flat"
+    ]
+  }
+]

@@ -1,0 +1,9 @@
+[Unit]
+Description=Elliott Wave Daily & Multi-TF Confluence Analyzer
+After=network.target
+
+[Service]
+Type=oneshot
+User=rezaserver
+WorkingDirectory=/home/rezaserver/ElliottWaveAnalyzer
+ExecStart=/bin/bash /home/rezaserver/ElliottWaveAnalyzer/scripts/run_automated_analysis.sh --timeframe 1D 4H

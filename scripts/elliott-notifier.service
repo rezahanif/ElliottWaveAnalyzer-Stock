@@ -1,0 +1,9 @@
+[Unit]
+Description=Elliott Wave Economic Event Notifier Daemon
+After=network.target
+
+[Service]
+Type=oneshot
+User=rezaserver
+WorkingDirectory=/home/rezaserver/ElliottWaveAnalyzer
+ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python /home/rezaserver/ElliottWaveAnalyzer/scripts/economic_notifier.py

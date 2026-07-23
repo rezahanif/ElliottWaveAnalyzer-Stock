@@ -1,0 +1,7 @@
+atr_multiplier,macro_pivot_count,macro_highs,macro_lows,bearish_candidates,avg_threshold_pct
+0.5,1389,694,695,513,2.13
+1.0,800,400,400,349,4.27
+1.5,430,215,215,194,6.4
+2.0,281,140,141,133,8.54
+3.0,133,66,67,65,12.81
+4.0,54,27,27,27,17.08

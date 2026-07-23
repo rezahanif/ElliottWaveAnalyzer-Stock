@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Elliott Wave Astronomical Notification Daily Timer
+
+[Timer]
+# Runs at 00:00:00 UTC+7 (Jakarta time) every day
+# which is 17:00:00 UTC
+OnCalendar=*-*-* 17:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

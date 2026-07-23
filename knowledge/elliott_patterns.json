@@ -1,0 +1,193 @@
+[
+  {
+    "id": "zigzag",
+    "name": "Zigzag",
+    "family": "zigzag_family",
+    "structure": "5-3-5",
+    "components": {
+      "A": 5,
+      "B": 3,
+      "C": 5
+    },
+    "behavior": [
+      "sharp_correction",
+      "directional",
+      "counter_trend"
+    ],
+    "rules": [
+      "B_usually_retraces_38_to_61_percent_of_A",
+      "B_rarely_exceeds_A_start",
+      "C_usually_equals_A_or_1_618x_A"
+    ]
+  },
+  {
+    "id": "double_zigzag",
+    "name": "Double Zigzag",
+    "family": "zigzag_family",
+    "structure": "W-X-Y",
+    "internal_structure": "(5-3-5)-(3)-(5-3-5)",
+    "behavior": [
+      "deep_correction",
+      "directional"
+    ],
+    "rules": [
+      "X_is_corrective_3_wave",
+      "Y_is_another_zigzag"
+    ]
+  },
+  {
+    "id": "triple_zigzag",
+    "name": "Triple Zigzag",
+    "family": "zigzag_family",
+    "structure": "W-X-Y-X-Z",
+    "internal_structure": "(5-3-5)-(3)-(5-3-5)-(3)-(5-3-5)",
+    "behavior": [
+      "very_deep_correction",
+      "rare"
+    ],
+    "rules": []
+  },
+  {
+    "id": "regular_flat",
+    "name": "Regular Flat",
+    "family": "flat_family",
+    "structure": "3-3-5",
+    "components": {
+      "A": 3,
+      "B": 3,
+      "C": 5
+    },
+    "behavior": [
+      "sideways_correction"
+    ],
+    "rules": [
+      "B_retraces_near_100_percent_of_A",
+      "C_breaks_A_end"
+    ]
+  },
+  {
+    "id": "expanded_flat",
+    "name": "Expanded Flat",
+    "family": "flat_family",
+    "structure": "3-3-5",
+    "components": {
+      "A": 3,
+      "B": 3,
+      "C": 5
+    },
+    "behavior": [
+      "false_break",
+      "liquidity_sweep",
+      "stop_hunt"
+    ],
+    "rules": [
+      "B_exceeds_A_start",
+      "C_extends_beyond_A_end",
+      "most_common_flat_variation"
+    ]
+  },
+  {
+    "id": "running_flat",
+    "name": "Running Flat",
+    "family": "flat_family",
+    "structure": "3-3-5",
+    "components": {
+      "A": 3,
+      "B": 3,
+      "C": 5
+    },
+    "behavior": [
+      "trend_strength"
+    ],
+    "rules": [
+      "B_exceeds_A_start",
+      "C_fails_to_break_A_end"
+    ]
+  },
+  {
+    "id": "contracting_triangle",
+    "name": "Contracting Triangle",
+    "family": "triangle_family",
+    "structure": "3-3-3-3-3",
+    "legs": ["A", "B", "C", "D", "E"],
+    "behavior": [
+      "volatility_contraction",
+      "continuation_pattern"
+    ],
+    "rules": [
+      "trendlines_converge",
+      "breakout_usually_follows_prior_trend"
+    ]
+  },
+  {
+    "id": "barrier_triangle",
+    "name": "Barrier Triangle",
+    "family": "triangle_family",
+    "structure": "3-3-3-3-3",
+    "behavior": [
+      "sideways_consolidation"
+    ],
+    "rules": [
+      "one_boundary_is_almost_horizontal"
+    ]
+  },
+  {
+    "id": "expanding_triangle",
+    "name": "Expanding Triangle",
+    "family": "triangle_family",
+    "structure": "3-3-3-3-3",
+    "behavior": [
+      "volatility_expansion"
+    ],
+    "rules": [
+      "trendlines_diverge",
+      "each_leg_larger_than_previous"
+    ]
+  },
+  {
+    "id": "running_triangle",
+    "name": "Running Triangle",
+    "family": "triangle_family",
+    "structure": "3-3-3-3-3",
+    "behavior": [
+      "strong_trend_continuation"
+    ],
+    "rules": [
+      "wave_B_exceeds_wave_A_start"
+    ]
+  },
+  {
+    "id": "double_three",
+    "name": "Double Three",
+    "family": "combination_family",
+    "structure": "W-X-Y",
+    "behavior": [
+      "sideways",
+      "complex_correction"
+    ],
+    "rules": [
+      "W_and_Y_are_corrective_patterns",
+      "X_is_connector"
+    ],
+    "allowed_combinations": [
+      "flat_x_flat",
+      "flat_x_zigzag",
+      "zigzag_x_flat",
+      "triangle_x_flat",
+      "flat_x_triangle"
+    ]
+  },
+  {
+    "id": "triple_three",
+    "name": "Triple Three",
+    "family": "combination_family",
+    "structure": "W-X-Y-X-Z",
+    "behavior": [
+      "very_complex",
+      "time_consuming"
+    ],
+    "rules": [
+      "three_corrective_patterns_linked_by_X_waves"
+    ]
+  }
+]

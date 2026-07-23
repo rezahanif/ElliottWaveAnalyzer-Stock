@@ -1,0 +1,9 @@
+[Unit]
+Description=Run Elliott Wave Astronomical Notification Daily
+After=network.target
+
+[Service]
+Type=oneshot
+User=rezaserver
+WorkingDirectory=/home/rezaserver/project/ElliottWaveAnalyzer
+ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python /home/rezaserver/project/ElliottWaveAnalyzer/scripts/astro_notifier.py

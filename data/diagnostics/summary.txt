@@ -1,0 +1,69 @@
+============================================================
+ISSUE 1 — THRESHOLD CALIBRATION
+============================================================
+Local highs detected (rolling 10-bar):  129
+Confirmed as MACRO pivot:               104  (80.6%)
+Confirmed as MICRO pivot:               128  (99.2%)
+MISSED by macro (potential short setup):25  (19.4%)
+Avg required macro threshold:           12.02%
+Avg actual drop from local high:        21.34%
+
+→ If avg_actual_drop < avg_required_threshold by a large margin,
+  the macro threshold is too coarse for 1D short detection.
+  These missed highs are the short setups the system cannot see.
+
+============================================================
+ISSUE 2 — RUNNING EXTREME (UNCONFIRMED PIVOT LOSS)
+============================================================
+Bars spent in SEEKING_LOW state:     1367
+Avg bars tracking unconfirmed high:  8.0
+Long unconfirmed runs (>20 bars):    1367
+
+→ Each SEEKING_LOW bar is a bar where the system IS tracking a
+  potential short entry but cannot act because the pivot is
+  unconfirmed. Long runs = the system tracked a real high for
+  weeks before either confirming or abandoning it.
+  Fix: expose running_extreme_price and pct_from_extreme in
+  the 6-hour check as a 'provisional' signal.
+
+============================================================
+ISSUE 3 — INTERNAL WAVE STRUCTURE (MISSED SUB-WAVE SHORTS)
+============================================================
+Macro bearish swings analyzed:          69
+Swings with micro short opportunities:  69
+Avg micro highs per bearish macro swing:2.0
+Largest swing: 2018-01-06 $17,712 → $6,048 (65.8% drop)
+  Micro highs inside: 2  (each = 1 missed short entry)
+
+→ The system sees the macro high and low but not the
+  internal corrective bounces. Each micro high inside a
+  bearish macro swing is a missed short-entry opportunity.
+  Fix: run dual-layer (macro + micro) pivot detection and
+  flag micro highs within macro bearish swings as SHORT signals.
+
+============================================================
+THRESHOLD SENSITIVITY — ATR MULTIPLIER vs PIVOT COUNT
+============================================================
+  ×0.5  pivots=1389  highs=694  bearish_candidates=513  avg_threshold=2.13%
+  ×1.0  pivots= 800  highs=400  bearish_candidates=349  avg_threshold=4.27%
+  ×1.5  pivots= 430  highs=215  bearish_candidates=194  avg_threshold=6.40%
+  ×2.0  pivots= 281  highs=140  bearish_candidates=133  avg_threshold=8.54%
+  ×3.0  pivots= 133  highs= 66  bearish_candidates= 65  avg_threshold=12.81%
+  ×4.0  pivots=  54  highs= 27  bearish_candidates= 27  avg_threshold=17.08%
+
+→ Find the multiplier where bearish_candidates first becomes
+  meaningful (>5-10) — that is your short-detection threshold.
+
+============================================================
+RECOMMENDED FIXES (in priority order)
+============================================================
+1. Add 'provisional signal' output from running_extreme_price
+   in the 6-hour check — do not wait for confirmation.
+2. Add micro-layer pivot detection to the signal pipeline.
+   Micro highs inside macro bearish swings = short signals.
+3. Add a BEARISH threshold layer (lower multiplier) for 1D
+   specifically for short detection. Use the sensitivity table
+   above to find the right multiplier.
+4. Log-scale Fibonacci: apply log transform before computing
+   extensions, back-transform the result. Lower priority —
+   fixes target precision, not directional blindness.

@@ -1,0 +1,54 @@
+[
+  {
+    "pattern": "zigzag",
+    "common_retracements": {
+      "wave_B": ["0.382x_A", "0.5x_A", "0.618x_A"]
+    },
+    "common_targets": {
+      "wave_C": ["1.0x_A", "1.618x_A"]
+    }
+  },
+  {
+    "pattern": "regular_flat",
+    "common_retracements": {
+      "wave_B": ["0.9x_A", "1.0x_A"]
+    },
+    "common_targets": {
+      "wave_C": ["1.0x_A"]
+    }
+  },
+  {
+    "pattern": "expanded_flat",
+    "common_retracements": {
+      "wave_B": ["1.236x_A", "1.382x_A"]
+    },
+    "common_targets": {
+      "wave_C": ["1.236x_A", "1.618x_A", "2.618x_A"]
+    }
+  },
+  {
+    "pattern": "running_flat",
+    "common_retracements": {
+      "wave_B": ["1.236x_A", "1.382x_A"]
+    },
+    "common_targets": {
+      "wave_C": ["less_than_1.0x_A"]
+    }
+  },
+  {
+    "pattern": "contracting_triangle",
+    "common_retracements": {
+      "wave_C": ["0.618x_A"],
+      "wave_D": ["0.618x_B"],
+      "wave_E": ["0.618x_C"]
+    }
+  },
+  {
+    "pattern": "expanding_triangle",
+    "common_extensions": {
+      "wave_C": ["1.618x_A"],
+      "wave_D": ["1.618x_B"],
+      "wave_E": ["1.618x_C"]
+    }
+  }
+]

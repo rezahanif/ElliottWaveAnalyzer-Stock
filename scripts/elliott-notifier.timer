@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Elliott Wave Economic Event Notifier every 5 minutes
+
+[Timer]
+# Runs every 5 minutes (at :00, :05, :10, etc.)
+OnCalendar=*:0/5
+Persistent=true
+
+[Install]
+WantedBy=timers.target

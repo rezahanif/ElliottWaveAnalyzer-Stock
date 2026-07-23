@@ -1,0 +1,57 @@
+==============================================================================
+             Elliott Wave Analyzer — File Synchronization Guide
+==============================================================================
+
+Since credentials (.env), model weights (models/wave_model.pt), and local 
+history (data/predictions.db) are ignored by git or are too heavy to commit,
+you need to sync them from your Mac to your Ubuntu server.
+
+Run the following commands from your MAC's terminal. 
+
+*Pre-requisite: Make sure you know your server's IP address (e.g. 192.168.1.50)
+ and your Ubuntu username (e.g. reza).*
+
+------------------------------------------------------------------------------
+Option A: Sync individual local files (Quickest)
+------------------------------------------------------------------------------
+If you have cloned the repository via Git on your server already, you only 
+need to upload the configuration, model weights, and database.
+
+Run these commands from the root directory of your project on your Mac:
+
+  # 1. Sync the environment secrets (.env)
+  scp .env YOUR_UBUNTU_USERNAME@<SERVER_IP>:/home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/
+
+  # 2. Sync the deep learning model weights
+  scp models/wave_model.pt YOUR_UBUNTU_USERNAME@<SERVER_IP>:/home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/models/
+
+  # 3. Sync the SQLite database (optional, to keep local history)
+  scp data/predictions.db YOUR_UBUNTU_USERNAME@<SERVER_IP>:/home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/data/
+
+------------------------------------------------------------------------------
+Option B: Sync the ENTIRE project folder (Recommended)
+------------------------------------------------------------------------------
+If you want to copy the entire codebase from your Mac to the server in one go,
+use `rsync`. This command copies everything, including the model and database, 
+but excludes heavy virtualenv and git metadata files.
+
+Run this command from the root directory of your project on your Mac:
+
+  rsync -avz --progress \
+    --exclude='.git/' \
+    --exclude='.venv/' \
+    --exclude='__pycache__/' \
+    --exclude='*.pyc' \
+    --exclude='.DS_Store' \
+    --exclude='.pytest_cache/' \
+    ./ YOUR_UBUNTU_USERNAME@<SERVER_IP>:/home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/
+
+------------------------------------------------------------------------------
+Troubleshooting connection problems
+------------------------------------------------------------------------------
+If the command times out or gives "Permission denied":
+1. Make sure your server has SSH installed and running:
+     sudo apt-get install openssh-server
+     sudo systemctl status ssh
+2. Ensure both your Mac and the Ubuntu server are connected to the same local WiFi/network.
+==============================================================================

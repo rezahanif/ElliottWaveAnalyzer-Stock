@@ -1,0 +1,14 @@
+[Unit]
+Description=Elliott Wave Live Connected Web Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=rezaserver
+WorkingDirectory=/home/rezaserver/ElliottWaveAnalyzer
+ExecStart=/home/rezaserver/miniconda3/envs/elliott/bin/python -m http.server 8080 --directory data/diagnostics
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

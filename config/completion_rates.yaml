@@ -1,0 +1,92 @@
+# ============================================================
+# completion_rates.yaml
+# Empirical measured-move completion rates per pattern type.
+# Used by FibonacciEngine.measured_move() to scale projections.
+#
+# Formula: target = breakout_point - (pattern_height * rate)
+# Source: v2.0 spec Section 7 + trader reference analysis
+# ============================================================
+
+patterns:
+
+  ascending_broadening_wedge:
+    rate: 0.70
+    note: >
+      70% of full theoretical measured move. Broadening wedges rarely
+      deliver 100%. Verified against reference BTC chart (18% * 0.70 = 12.6%
+      → ~60,900 target). Used as Track 1 ABW projection.
+
+  descending_broadening_wedge:
+    rate: 0.70
+    note: Mirror of ascending. Same empirical rate applies.
+
+  rising_wedge:
+    rate: 0.85
+    note: Standard wedges deliver ~85% of the measured move.
+
+  falling_wedge:
+    rate: 0.85
+    note: Mirror of rising wedge.
+
+  symmetrical_triangle:
+    rate: 1.00
+    note: >
+      Triangles typically deliver their full measured move (widest
+      part of the triangle projected from breakout point).
+
+  ascending_triangle:
+    rate: 1.00
+    note: Full measured move from flat resistance to rising support height.
+
+  descending_triangle:
+    rate: 1.00
+    note: Full measured move from flat support to declining resistance height.
+
+  expanding_triangle:
+    rate: 1.00
+    note: Expanding/reverse triangle. Full widest-part projection.
+
+  channel_ascending:
+    rate: 1.00
+    note: Parallel ascending channel. Full channel height projected on break.
+
+  channel_descending:
+    rate: 1.00
+    note: Parallel descending channel.
+
+  channel_horizontal:
+    rate: 1.00
+    note: Horizontal range/rectangle. Full range height.
+
+# ============================================================
+# Fibonacci cluster tools — not completion rates, but kept
+# here as a single source of truth for the engine constants.
+# ============================================================
+
+fibonacci_cluster_tools:
+
+  tool_a:
+    method: extension_from_c_top
+    ratio: 2.618
+    anchor: C_top
+    note: >
+      Place fib 0-point at confirmed structural top (C wave / wave 3 high,
+      confirmed by bearish divergence). 2.618 extension gives Target 1.
+      Reference value: 63,854 on BTC 2026 chart.
+
+  tool_b:
+    method: extension_b_to_c
+    ratio: 1.618
+    anchor_start: B_low
+    anchor_end: C_top
+    note: >
+      Measure full B→C range, project 1.618 extension downward from B.
+      Gives Main Target. Reference value: ~59,236 on BTC 2026 chart.
+
+cluster_threshold_pct: 2.0
+# Two targets are considered a valid cluster if within 2% of each other.
+# Tighter than traditional TA — justified by 24/7 crypto precision.
+
+invalidation_buffer_pct: 0.5
+# Invalidation level = C_top + 0.5%. Any daily close above this
+# invalidates the bearish count entirely.

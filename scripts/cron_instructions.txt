@@ -1,0 +1,57 @@
+==============================================================================
+                    Elliott Wave Analyzer — Cron Setup Guide
+==============================================================================
+
+If you prefer using Cron instead of Systemd timers to automate the analysis,
+follow the instructions below.
+
+------------------------------------------------------------------------------
+Step 1: Check your Server's Timezone
+------------------------------------------------------------------------------
+Cron jobs run based on the server's system time. Check your timezone by running:
+  date
+
+- If the output shows UTC time:
+  Use the "UTC Cron Schedule" below.
+- If the output shows WIB/Jakarta time (or any UTC+7 local time):
+  Use the "Jakarta (UTC+7) Cron Schedule" below.
+
+------------------------------------------------------------------------------
+Step 2: Edit your Crontab
+------------------------------------------------------------------------------
+Open your user-level crontab file:
+  crontab -e
+
+------------------------------------------------------------------------------
+Step 3: Add the Cron Entries
+------------------------------------------------------------------------------
+Copy and paste ONE of the schedules below. Be sure to replace:
+  - 'YOUR_UBUNTU_USERNAME' with your actual Ubuntu username (e.g. 'reza').
+
+--- OPTION A: UTC Cron Schedule (If your server runs on UTC time) ---
+
+# 1. Run Daily Analysis (1D + 4H + Multi-TF Confluence) at 00:05 UTC
+5 0 * * * /bin/bash /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/scripts/run_automated_analysis.sh --timeframe 1D 4H >> /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/data/cron.log 2>&1
+
+# 2. Run 4H Analysis (4H-only to avoid daily spam) at 04:05, 08:05, 12:05, 16:05, 20:05 UTC
+5 4,8,12,16,20 * * * /bin/bash /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/scripts/run_automated_analysis.sh --timeframe 4H >> /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/data/cron.log 2>&1
+
+
+--- OPTION B: Jakarta UTC+7 Schedule (If your server runs on local Jakarta time) ---
+
+# 1. Run Daily Analysis (1D + 4H + Multi-TF Confluence) at 07:05 AM WIB (Jakarta time)
+5 7 * * * /bin/bash /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/scripts/run_automated_analysis.sh --timeframe 1D 4H >> /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/data/cron.log 2>&1
+
+# 2. Run 4H Analysis (4H-only) at 03:05, 11:05, 15:05, 19:05, 23:05 WIB (Jakarta time)
+5 3,11,15,19,23 * * * /bin/bash /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/scripts/run_automated_analysis.sh --timeframe 4H >> /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/data/cron.log 2>&1
+
+------------------------------------------------------------------------------
+Step 4: Verify and Monitor Logs
+------------------------------------------------------------------------------
+- Verify the active crontab:
+    crontab -l
+- Check cron logs dynamically:
+    tail -f /home/YOUR_UBUNTU_USERNAME/ElliottWaveAnalyzer/data/cron.log
+- Monitor system syslog for cron execution triggers:
+    grep CRON /var/log/syslog
+==============================================================================

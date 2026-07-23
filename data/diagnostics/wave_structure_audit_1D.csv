@@ -1,0 +1,70 @@
+macro_high_date,macro_high_price,macro_low_date,macro_low_price,swing_drop_pct,macro_bars,micro_pivots_inside,micro_highs_inside,micro_lows_inside,short_opps_detail,system_saw_any_short
+2014-10-14,411.7,2014-11-02,320.63,22.12,19,2,1,1,"[{'micro_high_price': 411.7, 'drop_pct': 20.88}]",True
+2014-11-13,457.09,2015-01-14,171.51,62.48,62,8,4,4,"[{'micro_high_price': 457.09, 'drop_pct': 24.22}, {'micro_high_price': 394.7, 'drop_pct': 21.1}, {'micro_high_price': 336.29, 'drop_pct': 47.04}, {'micro_high_price': 298.75, 'drop_pct': 40.38}]",True
+2015-01-26,309.38,2015-02-01,212.01,31.47,6,2,1,1,"[{'micro_high_price': 309.38, 'drop_pct': 29.82}]",True
+2015-03-10,300.04,2015-04-26,214.87,28.39,47,8,4,4,"[{'micro_high_price': 300.04, 'drop_pct': 19.11}, {'micro_high_price': 277.3, 'drop_pct': 20.97}, {'micro_high_price': 261.8, 'drop_pct': 16.29}, {'micro_high_price': 237.91, 'drop_pct': 7.77}]",True
+2015-06-17,256.85,2015-06-25,240.37,6.42,8,2,1,1,"[{'micro_high_price': 256.85, 'drop_pct': 6.36}]",True
+2015-07-12,314.39,2015-08-18,211.08,32.86,37,4,2,2,"[{'micro_high_price': 314.39, 'drop_pct': 16.98}, {'micro_high_price': 297.77, 'drop_pct': 29.31}]",True
+2015-09-15,259.18,2015-09-22,225.12,13.14,7,2,1,1,"[{'micro_high_price': 259.18, 'drop_pct': 12.38}]",True
+2015-10-30,334.17,2015-10-31,309.25,7.46,1,2,1,1,"[{'micro_high_price': 334.17, 'drop_pct': 6.91}]",True
+2015-11-04,495.56,2015-11-11,301.0,39.26,7,4,2,2,"[{'micro_high_price': 495.56, 'drop_pct': 37.23}, {'micro_high_price': 390.59, 'drop_pct': 20.36}]",True
+2015-12-12,469.1,2016-01-16,354.91,24.34,35,4,2,2,"[{'micro_high_price': 469.1, 'drop_pct': 11.05}, {'micro_high_price': 462.93, 'drop_pct': 21.3}]",True
+2016-01-20,425.27,2016-01-31,367.83,13.51,11,2,1,1,"[{'micro_high_price': 425.27, 'drop_pct': 13.29}]",True
+2016-02-21,448.05,2016-03-05,394.04,12.05,13,4,2,2,"[{'micro_high_price': 448.05, 'drop_pct': 10.6}, {'micro_high_price': 441.51, 'drop_pct': 9.27}]",True
+2016-04-26,467.96,2016-04-28,436.65,6.69,2,2,1,1,"[{'micro_high_price': 467.96, 'drop_pct': 6.25}]",True
+2016-05-09,462.48,2016-05-20,437.39,5.43,11,2,1,1,"[{'micro_high_price': 462.48, 'drop_pct': 5.14}]",True
+2016-05-29,553.96,2016-06-23,558.14,-0.75,25,6,3,3,"[{'micro_high_price': 553.96, 'drop_pct': 4.07}, {'micro_high_price': 716.0, 'drop_pct': 16.74}, {'micro_high_price': 777.99, 'drop_pct': 23.38}]",True
+2016-06-18,777.99,2016-06-23,558.14,28.26,5,2,1,1,"[{'micro_high_price': 777.99, 'drop_pct': 23.38}]",True
+2016-07-03,704.97,2016-08-02,531.33,24.63,30,2,1,1,"[{'micro_high_price': 704.97, 'drop_pct': 22.34}]",True
+2016-11-03,745.77,2017-01-12,755.76,-1.34,70,10,5,5,"[{'micro_high_price': 745.77, 'drop_pct': 5.87}, {'micro_high_price': 740.05, 'drop_pct': 5.14}, {'micro_high_price': 756.24, 'drop_pct': 3.33}, {'micro_high_price': 1191.1, 'drop_pct': 34.7}, {'micro_high_price': 942.72, 'drop_pct': 17.5}]",True
+2017-01-05,1191.1,2017-01-12,755.76,36.55,7,4,2,2,"[{'micro_high_price': 1191.1, 'drop_pct': 34.7}, {'micro_high_price': 942.72, 'drop_pct': 17.5}]",True
+2017-03-03,1280.31,2017-03-18,957.66,25.2,15,4,2,2,"[{'micro_high_price': 1280.31, 'drop_pct': 26.77}, {'micro_high_price': 1257.98, 'drop_pct': 25.47}]",True
+2017-03-21,1122.43,2017-03-25,903.71,19.49,4,2,1,1,"[{'micro_high_price': 1122.43, 'drop_pct': 16.47}]",True
+2017-05-25,2763.71,2017-05-27,1855.83,32.85,2,2,1,1,"[{'micro_high_price': 2763.71, 'drop_pct': 26.23}]",True
+2017-06-06,2999.91,2017-07-16,1843.03,38.56,40,4,2,2,"[{'micro_high_price': 2999.91, 'drop_pct': 18.85}, {'micro_high_price': 2916.14, 'drop_pct': 33.82}]",True
+2017-09-02,4975.04,2017-09-15,2946.62,40.77,13,4,2,2,"[{'micro_high_price': 4975.04, 'drop_pct': 36.58}, {'micro_high_price': 4661.0, 'drop_pct': 32.31}]",True
+2017-12-17,20089.0,2017-12-22,11833.0,41.1,5,2,1,1,"[{'micro_high_price': 20089.0, 'drop_pct': 42.8}]",True
+2018-01-06,17712.4,2018-02-06,6048.26,65.85,31,4,2,2,"[{'micro_high_price': 17712.4, 'drop_pct': 60.73}, {'micro_high_price': 13103.0, 'drop_pct': 46.92}]",True
+2018-02-20,11958.5,2018-06-24,5826.41,51.28,124,12,6,6,"[{'micro_high_price': 11958.5, 'drop_pct': 33.8}, {'micro_high_price': 9177.37, 'drop_pct': 27.69}, {'micro_high_price': 7530.94, 'drop_pct': 11.88}, {'micro_high_price': 9964.5, 'drop_pct': 28.39}, {'micro_high_price': 7754.89, 'drop_pct': 23.87}, {'micro_high_price': 6822.5, 'drop_pct': 13.47}]",True
+2018-07-24,8424.27,2018-08-14,5971.05,29.12,21,2,1,1,"[{'micro_high_price': 8424.27, 'drop_pct': 26.58}]",True
+2018-09-05,7388.43,2018-11-25,3585.06,51.48,81,12,6,6,"[{'micro_high_price': 7388.43, 'drop_pct': 15.73}, {'micro_high_price': 6814.56, 'drop_pct': 8.19}, {'micro_high_price': 6785.03, 'drop_pct': 7.79}, {'micro_high_price': 6965.06, 'drop_pct': 17.61}, {'micro_high_price': 5774.82, 'drop_pct': 43.95}, {'micro_high_price': 4675.73, 'drop_pct': 30.78}]",True
+2018-11-29,4413.02,2018-12-15,3191.3,27.68,16,2,1,1,"[{'micro_high_price': 4413.02, 'drop_pct': 26.65}]",True
+2018-12-24,4271.79,2019-02-08,3391.02,20.62,46,4,2,2,"[{'micro_high_price': 4271.79, 'drop_pct': 16.83}, {'micro_high_price': 4109.02, 'drop_pct': 17.27}]",True
+2019-02-24,4210.64,2019-03-04,3733.75,11.33,8,2,1,1,"[{'micro_high_price': 4210.64, 'drop_pct': 10.67}]",True
+2019-04-03,5307.0,2019-04-04,4836.79,8.86,1,2,1,1,"[{'micro_high_price': 5307.0, 'drop_pct': 7.24}]",True
+2019-05-16,8320.82,2019-05-17,7038.12,15.42,1,2,1,1,"[{'micro_high_price': 8320.82, 'drop_pct': 12.61}]",True
+2019-05-30,9008.31,2019-06-04,7564.49,16.03,5,2,1,1,"[{'micro_high_price': 9008.31, 'drop_pct': 14.66}]",True
+2019-06-26,13796.49,2019-07-02,9737.88,29.42,6,4,2,2,"[{'micro_high_price': 13796.49, 'drop_pct': 31.3}, {'micro_high_price': 12400.91, 'drop_pct': 23.57}]",True
+2019-07-10,13129.53,2019-07-17,9163.13,30.21,7,2,1,1,"[{'micro_high_price': 13129.53, 'drop_pct': 27.81}]",True
+2019-08-06,12273.82,2019-10-24,7446.99,39.33,79,8,4,4,"[{'micro_high_price': 12273.82, 'drop_pct': 22.52}, {'micro_high_price': 10947.04, 'drop_pct': 13.13}, {'micro_high_price': 10898.76, 'drop_pct': 26.71}, {'micro_high_price': 8721.78, 'drop_pct': 14.08}]",True
+2019-10-26,10021.74,2019-11-25,6617.17,33.97,30,2,1,1,"[{'micro_high_price': 10021.74, 'drop_pct': 29.67}]",True
+2019-11-30,7836.1,2019-12-18,6540.05,16.54,18,2,1,1,"[{'micro_high_price': 7836.1, 'drop_pct': 15.26}]",True
+2020-02-13,10457.63,2020-03-13,4106.98,60.73,29,6,3,3,"[{'micro_high_price': 10457.63, 'drop_pct': 52.47}, {'micro_high_price': 10191.68, 'drop_pct': 51.23}, {'micro_high_price': 9167.7, 'drop_pct': 45.78}]",True
+2021-04-14,64863.1,2021-05-19,30681.5,52.7,35,7,4,3,"[{'micro_high_price': 64863.1, 'drop_pct': 24.45}, {'micro_high_price': 58973.31, 'drop_pct': 41.3}, {'micro_high_price': 59519.36, 'drop_pct': 43.76}, {'micro_high_price': 43546.12, 'drop_pct': 23.13}]",True
+2021-11-10,68789.62,2022-01-24,33184.06,51.76,75,10,5,5,"[{'micro_high_price': 68789.62, 'drop_pct': 31.32}, {'micro_high_price': 60004.43, 'drop_pct': 23.0}, {'micro_high_price': 53904.68, 'drop_pct': 14.29}, {'micro_high_price': 51956.33, 'drop_pct': 32.58}, {'micro_high_price': 44278.42, 'drop_pct': 20.89}]",True
+2022-02-10,45661.17,2022-02-24,34459.22,24.53,14,2,1,1,"[{'micro_high_price': 45661.17, 'drop_pct': 18.8}]",True
+2022-03-02,45077.58,2022-03-07,37260.2,17.34,5,2,1,1,"[{'micro_high_price': 45077.58, 'drop_pct': 16.03}]",True
+2022-03-28,48086.84,2022-05-12,26350.49,45.2,45,4,2,2,"[{'micro_high_price': 48086.84, 'drop_pct': 20.73}, {'micro_high_price': 42893.58, 'drop_pct': 33.04}]",True
+2022-05-31,32249.86,2022-06-18,17708.62,45.09,18,4,2,2,"[{'micro_high_price': 32249.86, 'drop_pct': 41.03}, {'micro_high_price': 22868.92, 'drop_pct': 16.84}]",True
+2022-08-15,25135.59,2022-09-07,18644.47,25.82,23,2,1,1,"[{'micro_high_price': 25135.59, 'drop_pct': 25.06}]",True
+2022-09-13,22673.82,2022-09-21,18290.31,19.33,8,2,1,1,"[{'micro_high_price': 22673.82, 'drop_pct': 18.2}]",True
+2022-11-05,21446.89,2022-11-09,15682.69,26.88,4,2,1,1,"[{'micro_high_price': 21446.89, 'drop_pct': 26.39}]",True
+2023-02-16,25134.12,2023-03-10,19628.25,21.91,22,4,2,2,"[{'micro_high_price': 25134.12, 'drop_pct': 19.68}, {'micro_high_price': 25126.85, 'drop_pct': 19.66}]",True
+2023-04-14,31005.61,2023-06-15,24797.17,20.02,62,10,5,5,"[{'micro_high_price': 31005.61, 'drop_pct': 13.62}, {'micro_high_price': 29995.84, 'drop_pct': 12.21}, {'micro_high_price': 29820.13, 'drop_pct': 13.62}, {'micro_high_price': 28432.04, 'drop_pct': 11.63}, {'micro_high_price': 27332.18, 'drop_pct': 8.08}]",True
+2023-07-13,31814.52,2023-08-17,25409.11,20.13,35,3,2,1,"[{'micro_high_price': 31814.52, 'drop_pct': 8.72}, {'micro_high_price': 28745.95, 'drop_pct': 12.47}]",True
+2023-08-29,28089.34,2023-09-11,24930.3,11.25,13,2,1,1,"[{'micro_high_price': 28089.34, 'drop_pct': 10.42}]",True
+2023-12-08,44705.52,2023-12-11,40234.58,10.0,3,2,1,1,"[{'micro_high_price': 44705.52, 'drop_pct': 7.74}]",True
+2024-01-11,48969.37,2024-01-23,38521.89,21.33,12,2,1,1,"[{'micro_high_price': 48969.37, 'drop_pct': 19.32}]",True
+2024-03-14,73750.07,2024-03-20,60807.79,17.55,6,2,1,1,"[{'micro_high_price': 73750.07, 'drop_pct': 16.05}]",True
+2024-04-08,72715.36,2024-05-01,56555.29,22.22,23,4,2,2,"[{'micro_high_price': 72715.36, 'drop_pct': 19.89}, {'micro_high_price': 67233.96, 'drop_pct': 13.36}]",True
+2024-05-21,71946.46,2024-07-05,53717.38,25.34,45,4,2,2,"[{'micro_high_price': 71946.46, 'drop_pct': 9.89}, {'micro_high_price': 63777.23, 'drop_pct': 12.43}]",True
+2024-07-29,69987.54,2024-08-05,49121.24,29.81,7,2,1,1,"[{'micro_high_price': 69987.54, 'drop_pct': 22.86}]",True
+2024-08-25,64996.42,2024-09-06,52598.7,19.07,12,2,1,1,"[{'micro_high_price': 64996.42, 'drop_pct': 17.0}]",True
+2024-12-17,108268.45,2025-01-13,89260.1,17.56,27,6,3,3,"[{'micro_high_price': 108268.45, 'drop_pct': 14.58}, {'micro_high_price': 99884.57, 'drop_pct': 7.41}, {'micro_high_price': 102712.48, 'drop_pct': 9.96}]",True
+2025-01-20,109114.88,2025-02-28,78248.91,28.29,39,8,4,4,"[{'micro_high_price': 109114.88, 'drop_pct': 12.44}, {'micro_high_price': 106418.77, 'drop_pct': 20.74}, {'micro_high_price': 102514.17, 'drop_pct': 17.72}, {'micro_high_price': 99497.97, 'drop_pct': 21.07}]",True
+2025-03-02,95043.44,2025-04-07,74436.68,21.68,36,6,3,3,"[{'micro_high_price': 95043.44, 'drop_pct': 17.37}, {'micro_high_price': 92804.94, 'drop_pct': 15.38}, {'micro_high_price': 88758.73, 'drop_pct': 14.07}]",True
+2025-08-14,124457.12,2025-09-01,107271.18,13.81,18,4,2,2,"[{'micro_high_price': 124457.12, 'drop_pct': 13.03}, {'micro_high_price': 117377.4, 'drop_pct': 7.79}]",True
+2025-09-18,117911.79,2025-09-25,108713.4,7.8,7,2,1,1,"[{'micro_high_price': 117911.79, 'drop_pct': 9.71}]",True
+2025-10-06,126198.07,2025-10-10,104582.41,17.13,4,3,2,1,"[{'micro_high_price': 126198.07, 'drop_pct': 19.5}, {'micro_high_price': 122509.66, 'drop_pct': 17.31}]",True
+2025-10-27,116273.31,2025-11-21,80659.81,30.63,25,4,2,2,"[{'micro_high_price': 116273.31, 'drop_pct': 27.2}, {'micro_high_price': 107428.26, 'drop_pct': 21.2}]",True
+2026-01-14,97860.6,2026-02-06,60074.2,38.61,23,6,3,3,"[{'micro_high_price': 97860.6, 'drop_pct': 35.93}, {'micro_high_price': 90439.29, 'drop_pct': 30.67}, {'micro_high_price': 79258.61, 'drop_pct': 20.89}]",True

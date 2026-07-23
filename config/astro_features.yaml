@@ -1,0 +1,99 @@
+# ============================================================
+# astro_features.yaml
+# Planetary/lunar feature extraction manifest for astro_features.py.
+#
+# Source: user-provided pipeline spec v1.1, adapted to repo config
+# conventions. Verified 2026-06-20 against pyswisseph computation —
+# see calibration_notes below for what changed and why.
+#
+# DESIGN PRINCIPLE (do not deviate without updating Section 1 of
+# AGENT_BRIEFING.md): this engine outputs raw, continuous, UNSIGNED
+# features only. It does not classify any aspect as bullish/bearish,
+# does not output a hand-tuned composite "Bradley score" with assumed
+# polarity, and does not encode fixed historical-date numerology
+# (e.g. "N lunar months since the 1929 top" — not recomputable for
+# any future date without already knowing which past pivot to anchor
+# to, so it can't function as a live feature). All directional
+# meaning is left for the TFT to learn from data.
+# ============================================================
+
+calibration_notes: >
+  Verified against pyswisseph (Moshier fallback, no .se1 files in this
+  environment — see ephemeris_path below). Roughly half of the
+  hand-curated "Full Moon" claims in the original historical reference
+  table did not match actual computed lunar phase (off by 3-5 days in
+  several cases). The Jupiter-Uranus conjunction claim for 2024-04-20
+  verified almost exactly (0.1 deg orb). Lesson: always compute, never
+  hand-curate historical alignments for use as training labels.
+
+pipeline:
+  name: "btc_celestial_sentiment_pipeline"
+  target_asset: "BTC/USDT"
+  data_frequency: "1d"
+  start_date: "2015-01-01"
+  timezone: "UTC"
+
+astronomy_settings:
+  engine: "pyswisseph"
+  coordinate_system: "geocentric"
+  # If this path has no .se1 files, pyswisseph falls back automatically
+  # to the built-in Moshier semi-analytic ephemeris (~1 arcsecond
+  # precision for modern dates — more than sufficient given orb
+  # tolerances of 2-3.5 degrees below). Download .se1 files from
+  # ftp://ftp.astro.com/pub/swisseph/ephe/ for marginally higher
+  # precision; not required for this use case.
+  ephemeris_path: "./ephe"
+
+features:
+  lunar_dynamics:
+    synodic_phase:
+      enabled: true
+      transformations: ["raw", "sin", "cos"]
+      description: "Sun-Moon angular separation. 0=New Moon, 180=Full Moon."
+
+    anomalistic_cycle:
+      enabled: true
+      transformations: ["normalized_distance"]
+      description: >
+        Moon distance normalized between perigee (~356500km, 0.0)
+        and apogee (~406700km, 1.0). Perigee correlates with tidal/
+        volatility extremes in some studies; treated as a feature
+        to test, not an assumed effect.
+
+    draconic_nodes:
+      enabled: true
+      transformations: ["node_distance"]
+      description: >
+        Angular distance from Moon to nearest lunar node (True Node
+        or its opposite point). Low values = eclipse-season proximity.
+
+  planetary_tracking:
+    - planet: "mars"
+      track_velocity: true
+      transformations: ["sin", "cos"]
+    - planet: "uranus"
+      track_velocity: true
+      transformations: ["sin", "cos"]
+    - planet: "jupiter"
+      track_velocity: false
+      transformations: ["sin", "cos"]
+    - planet: "saturn"
+      track_velocity: true
+      transformations: ["sin", "cos"]
+
+  angular_aspects:
+    - pair: ["jupiter", "uranus"]
+      angles: [0, 90, 120, 180]
+      max_orb: 3.5
+      weight_model: "continuous"
+      description: "Macro-cyclical alignment. Verified near-exact (0.1 deg) on 2024-04-20 halving."
+    - pair: ["mars", "uranus"]
+      angles: [0, 90, 180]
+      max_orb: 2.0
+      weight_model: "continuous"
+      description: "Tighter orb, faster-moving pair — higher frequency signal."
+
+  noise_filters:
+    mercury_retrograde:
+      enabled: true
+      output_format: "binary"

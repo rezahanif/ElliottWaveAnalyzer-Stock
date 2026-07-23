@@ -1,0 +1,329 @@
+# ============================================================
+# correction_rules.yaml
+# Rules governing all Elliott Wave correction structure types.
+# Used by CorrectionClassifier.py and IncrementalChecker.py.
+#
+# Source: v2.0 spec Section 3B / 3C / 3D / 3E + Fibonacci rules
+#         from Section 7. Hard rules are non-negotiable.
+#         Soft bounds carry ±5% tolerance (tolerance: 0.05).
+# ============================================================
+
+tolerance: 0.05
+# ±5% soft tolerance applied to all ratio bounds unless marked HARD.
+
+# ============================================================
+# FLAT FAMILY  (3-3-5 signature)
+# Wave A: 3 waves | Wave B: 3 waves | Wave C: 5 waves
+# Classifier entry condition: A=3 and B=3 and C=5
+# ============================================================
+
+flat_family:
+
+  regular_flat:
+    signature: "3-3-5"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    wave_A:
+      sub_waves: 3
+    wave_B:
+      sub_waves: 3
+      retrace_of_A_min: 0.810   # soft
+      retrace_of_A_max: 1.000   # soft — B barely reaches A's start, does not exceed
+    wave_C:
+      sub_waves: 5
+      length_vs_A_min: 0.900    # soft
+      length_vs_A_max: 1.100    # soft — C terminates near A's end
+      typical_ratio: 1.000
+    classification_notes: >
+      B barely reaches A's origin. C ends close to A's end. The least
+      aggressive flat. b_breach_expected=false because B does not exceed A's
+      starting price. No liquidity sweep anticipated at B.
+
+  expanded_flat:
+    signature: "3-3-5"
+    b_breach_expected: true
+    diagonal_overlap_ok: false
+    wave_A:
+      sub_waves: 3
+    wave_B:
+      sub_waves: 3
+      retrace_of_A_min: 1.000   # HARD — B must exceed A's starting point
+      retrace_of_A_max: 1.382   # soft, typically 1.05–1.38
+      typical_ratios: [1.236, 1.382]
+    wave_C:
+      sub_waves: 5
+      length_vs_A_min: 1.236    # soft
+      length_vs_A_max: 1.618    # soft
+      typical_ratios: [1.236, 1.618, 2.618]
+    classification_notes: >
+      The type identified in the reference BTC 2026 chart. B exceeds A's
+      starting price (b_breach_expected=true). This B-breach is NOT an
+      invalidation — it is the expected structure. Flag as SWEEP token
+      if B-breach occurs with a fast reversal (liquidity sweep behaviour).
+      C exceeds A's end, making it the most aggressive flat.
+
+  running_flat:
+    signature: "3-3-5"
+    b_breach_expected: true
+    diagonal_overlap_ok: false
+    wave_A:
+      sub_waves: 3
+    wave_B:
+      sub_waves: 3
+      retrace_of_A_min: 1.100   # HARD — B significantly exceeds A's start
+      retrace_of_A_max: 1.382   # soft
+    wave_C:
+      sub_waves: 5
+      length_vs_A_max: 1.000    # HARD — C must FAIL to reach A's end (truncated)
+      typical_ratios: [0.618, 0.786]
+    classification_notes: >
+      Rare. Very bullish underlying context. C truncation (failing to reach
+      A's end) signals strong demand absorbing the correction. Requires
+      higher-degree structure confirmation before accepting this count.
+      Do not default to running_flat — exhaust expanded_flat first.
+
+# ============================================================
+# ZIGZAG FAMILY  (5-3-5 or linked 5-3-5 signature)
+# Wave A: 5 waves | Wave B: 3 waves | Wave C: 5 waves
+# Classifier entry condition: A=5 and B=3 and C=5
+# ============================================================
+
+zigzag_family:
+
+  single_zigzag:
+    signature: "5-3-5"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    wave_A:
+      sub_waves: 5   # impulse
+    wave_B:
+      sub_waves: 3
+      retrace_of_A_min: 0.382   # soft
+      retrace_of_A_max: 0.786   # soft — rarely exceeds 78.6%
+    wave_C:
+      sub_waves: 5   # impulse
+      length_vs_A_typical: [0.618, 1.000, 1.618]
+    classification_notes: >
+      Sharpest, cleanest correction. B rarely exceeds 78.6% of A.
+      b_breach_expected=false. Deepest correction relative to prior impulse.
+      Most common in strong trending markets as a Wave 2 or Wave 4.
+
+  double_zigzag:
+    signature: "W-X-Y"
+    sub_structure: "5-3-5 + 3 + 5-3-5"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    wave_W:
+      type: single_zigzag
+    wave_X:
+      sub_waves: 3
+      retrace_of_W_min: 0.382   # soft
+      retrace_of_W_max: 0.786   # soft
+    wave_Y:
+      type: single_zigzag
+      length_vs_W_typical: [0.618, 1.000]
+    classification_notes: >
+      Two zigzags connected by a 3-wave X connector. Appears as a deep
+      prolonged correction. Often mistaken for an impulse — check sub-wave
+      counts carefully. b_breach_expected=false throughout.
+
+  triple_zigzag:
+    signature: "W-X-Y-X-Z"
+    sub_structure: "three 5-3-5 units connected by two X waves"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    classification_notes: >
+      Extremely rare. If suspected, re-examine the count — it is almost
+      always a different structure. Only accept after exhausting all other
+      possibilities. Flag uncertainty explicitly in output.
+
+# ============================================================
+# TRIANGLE FAMILY  (3-3-3-3-3 signature)
+# All five legs are 3-wave structures.
+# Appear as: Wave 4 of impulse | Wave B of flat/zigzag | X wave
+# Classifier entry condition: all_legs_are_3_wave
+# ============================================================
+
+triangle_family:
+
+  contracting_symmetrical:
+    signature: "3-3-3-3-3"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    trendlines: converging   # both lines angle toward apex
+    breakout_direction: prior_trend_continuation
+    wave_E:
+      retrace_of_D_typical: 0.618
+    volume_note: contracts during formation, expands on breakout
+    classification_notes: >
+      Each successive swing smaller than the last. Both trendlines converge.
+      Breakout continues in direction of the prior trend. Volume signature
+      is a useful secondary confirmation.
+
+  contracting_ascending:
+    signature: "3-3-3-3-3"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    trendlines:
+      upper: flat_resistance
+      lower: rising_support
+    breakout_direction: bullish_bias
+    classification_notes: >
+      Flat upper resistance with rising lower support. Each successive low
+      is higher. Buyers absorbing at flat resistance. Resolves upward
+      more often than not.
+
+  contracting_descending:
+    signature: "3-3-3-3-3"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    trendlines:
+      upper: declining_resistance
+      lower: flat_support
+    breakout_direction: bearish_bias
+    classification_notes: >
+      Flat lower support with declining upper resistance. Mirror of
+      ascending triangle. Bearish bias.
+
+  expanding:
+    signature: "3-3-3-3-3"
+    b_breach_expected: false
+    diagonal_overlap_ok: false
+    trendlines: diverging   # both lines expand outward
+    typical_position: wave_B
+    classification_notes: >
+      Rare. Each successive swing is larger. Signals indecision at
+      major structural levels. Typically appears in Wave B positions.
+      Treat with extra skepticism — confirm sub-wave counts rigorously.
+
+# ============================================================
+# COMBINATION FAMILY  (complex corrections)
+# Two or three simple corrections linked by X waves.
+# ============================================================
+
+combination_family:
+
+  double_three:
+    signature: "W-X-Y"
+    b_breach_expected: depends_on_Y_type
+    diagonal_overlap_ok: false
+    wave_W:
+      type: any_simple_correction   # flat, zigzag, or triangle
+    wave_X:
+      sub_waves: 3
+      retrace_of_W_min: 0.382
+      retrace_of_W_max: 0.786
+    wave_Y:
+      type: any_simple_correction
+      constraint: >
+        Cannot be the same type as W if W is a zigzag.
+        (Two zigzags = double_zigzag, not double_three)
+    classification_notes: >
+      Sideways to slightly directional. Time-consuming. b_breach_expected
+      is inherited from the Y wave type — check Y's correction subtype
+      and apply that rule. Common in market consolidations.
+
+  triple_three:
+    signature: "W-X-Y-X-Z"
+    b_breach_expected: depends_on_Z_type
+    diagonal_overlap_ok: false
+    classification_notes: >
+      Three simple corrections connected by two X waves. Very rare.
+      Extremely time-consuming. Market appears to do "nothing" for an
+      extended period. If suspected, verify — it is usually a double_three
+      or a misidentified triangle. b_breach_expected from Z wave type.
+
+# ============================================================
+# HARD INVALIDATION RULES — no tolerance, no exceptions
+# These are checked by IncrementalChecker.py at every new candle.
+# Violation = count is wrong, not measurement noise.
+# ============================================================
+
+hard_invalidation_rules:
+
+  # Flat family
+  flat_b_wave_floor:
+    applies_to: [regular_flat, expanded_flat, running_flat]
+    rule: >
+      For regular_flat: B must not exceed 100% of A's starting price (soft).
+      For expanded_flat and running_flat: B MUST exceed A's starting price.
+      A B wave that fails to exceed A's start in an expanded/running count
+      invalidates that subtype — reclassify as regular_flat or zigzag.
+
+  # Zigzag family
+  zigzag_b_cap:
+    applies_to: [single_zigzag, double_zigzag]
+    rule: >
+      B wave MUST NOT retrace more than 78.6% of A. If B exceeds 78.6%
+      of A, the structure is no longer a zigzag — reclassify as flat family.
+
+  # Triangle family
+  triangle_sub_wave_count:
+    applies_to: [contracting_symmetrical, contracting_ascending, contracting_descending, expanding]
+    rule: >
+      Every leg (A through E) must be a 3-wave structure.
+      Any leg that subdivides into 5 waves invalidates the triangle count.
+
+# ============================================================
+# B-BREACH DECISION TREE
+# Used by CorrectionClassifier and StructureTokenizer to decide
+# whether to emit a SWEEP token and set b_breach_expected flag.
+# ============================================================
+
+b_breach_decision:
+  step_1: classify correction type (flat subtype / zigzag / triangle / combo)
+  step_2:
+    if expanded_flat or running_flat:
+      b_breach_expected: true
+      action: >
+        When B exceeds A's origin, do NOT invalidate. Set b_breach_expected=true.
+        If breach is fast with immediate reversal, emit SWEEP token.
+        This is expected structure, not a failure.
+    if regular_flat:
+      b_breach_expected: false
+      action: >
+        B should reach but not meaningfully exceed A's origin.
+        If B clearly breaks above A's origin, reclassify as expanded_flat.
+    if zigzag_family:
+      b_breach_expected: false
+      action: >
+        B exceeding 78.6% of A is already a soft warning.
+        B exceeding A's origin invalidates zigzag — reclassify.
+    if triangle_family:
+      b_breach_expected: false
+      action: Any leg exceeding prior leg invalidates contracting type — check expanding.
+    if combination_family:
+      b_breach_expected: inherit_from_Y_or_Z_wave_type
+
+# ============================================================
+# DIAGONAL OVERLAP RULES
+# Used by WaveRules.py to decide when wave4/wave1 overlap is valid.
+# ============================================================
+
+diagonal_overlap:
+  standard_impulse:
+    wave4_overlap_wave1: HARD_INVALID
+    note: >
+      In any standard impulse, wave 4 entering wave 1's price territory
+      is a hard invalidation. No tolerance. Reclassify the count.
+
+  leading_diagonal:
+    wave4_overlap_wave1: VALID_EXPECTED
+    pattern_position: wave_1_or_wave_A_only
+    sub_wave_structure: "3-3-3-3-3"
+    note: >
+      Overlap is expected and required. Trendlines of waves 1-3 and 2-4
+      must converge (checked by LeadingDiagonal rule in WaveRules.py).
+      diagonal_overlap_ok = true.
+
+  ending_diagonal:
+    wave4_overlap_wave1: VALID_EXPECTED
+    pattern_position: wave_5_or_wave_C_only
+    sub_wave_structure: "3-3-3-3-3"
+    note: >
+      Wave 4 ALWAYS overlaps wave 1. This is the only impulse-like
+      structure where overlap is not an invalidation — it is a requirement.
+      diagonal_overlap_ok = true. Signals exhaustion; reversal imminent
+      after wave 5 of the diagonal completes.
+      System MUST check diagonal_overlap_ok flag before applying the
+      standard wave4/wave1 no-overlap hard rule.

@@ -1,0 +1,30 @@
+[
+  {
+    "symbol": "BTCUSDT",
+    "timeframe": "4H",
+    "pattern": "expanded_flat",
+    "description": "April-May 2021 market top correction prior to major breakdown.",
+    "outcome": "bearish_reversal"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "timeframe": "1D",
+    "pattern": "zigzag",
+    "description": "May-July 2021 consolidation and clean corrective breakdown before reversal to new highs.",
+    "outcome": "bullish_reversal"
+  },
+  {
+    "symbol": "ETHUSDT",
+    "timeframe": "1D",
+    "pattern": "contracting_triangle",
+    "description": "Late 2020 consolidation phase leading to a major breakout rally.",
+    "outcome": "bullish_continuation"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "timeframe": "1D",
+    "pattern": "single_zigzag",
+    "description": "January-June 2026 corrective wave where Wave B retraced 60.1% of Wave A, followed by a Wave C impulse drop down to $59,108.92.",
+    "outcome": "bullish_reversal"
+  }
+]

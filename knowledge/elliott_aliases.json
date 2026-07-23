@@ -1,0 +1,89 @@
+[
+  {
+    "term": "ABC Correction",
+    "possible_patterns": [
+      "zigzag",
+      "regular_flat",
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "Non Ideal ABC",
+    "possible_patterns": [
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "Flat Correction",
+    "possible_patterns": [
+      "regular_flat",
+      "expanded_flat",
+      "running_flat"
+    ]
+  },
+  {
+    "term": "Complex Correction",
+    "possible_patterns": [
+      "double_three",
+      "triple_three",
+      "double_zigzag",
+      "triple_zigzag"
+    ]
+  },
+  {
+    "term": "Deep Correction",
+    "possible_patterns": [
+      "double_zigzag",
+      "triple_zigzag"
+    ]
+  },
+  {
+    "term": "Running Correction",
+    "possible_patterns": [
+      "running_flat",
+      "running_triangle"
+    ]
+  },
+  {
+    "term": "Liquidity Grab",
+    "possible_patterns": [
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "Stop Hunt",
+    "possible_patterns": [
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "False Break",
+    "possible_patterns": [
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "Bull Trap",
+    "possible_patterns": [
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "Bear Trap",
+    "possible_patterns": [
+      "expanded_flat"
+    ]
+  },
+  {
+    "term": "Sideways Correction",
+    "possible_patterns": [
+      "regular_flat",
+      "expanded_flat",
+      "running_flat",
+      "contracting_triangle",
+      "barrier_triangle",
+      "double_three",
+      "triple_three"
+    ]
+  }
+]

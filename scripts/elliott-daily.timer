@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Elliott Wave Daily & Multi-TF Analyzer 5 minutes after UTC midnight close
+
+[Timer]
+# Runs at 00:05:00 UTC every day
+OnCalendar=*-*-* 00:05:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,91 @@
+# ============================================================
+# economic_calender.yaml
+# Scheduled high-impact US macro events + confidence adjustment rules.
+# Used by EconomicCalendarEngine in src/waveconf/ingestion/economic_calender.py
+#
+# Source: v2.0 spec Section 8 + Federal Reserve official calendar
+#         (federalreserve.gov/newsevents) — FOMC dates verified 2026-06-20.
+# ============================================================
+
+# ------------------------------------------------------------
+# CALIBRATION STATUS — read before trusting these numbers
+# ------------------------------------------------------------
+# The multipliers below are an UNVALIDATED PRIOR based on general
+# market behavior (FOMC/CPI days carry elevated, less directional
+# volatility; the 2 days after FOMC tend to resolve uncertainty).
+# They have NOT been backtested against this project's own BTC
+# dataset. Before relying on these in live signals, run a backtest
+# of realized volatility/price-move-magnitude around each historical
+# FOMC date already present in your ~11 years of BTC daily data and
+# adjust these factors to match what actually happened, not what
+# seemed reasonable in the abstract.
+calibration_status: "unvalidated_prior_v0.1"
+calibration_todo: >
+  Backtest against historical FOMC dates (2014-2026) already covered
+  by data/pivots/BTC_1D_with_layers.json. Compare realized ATR in the
+  [-5d, +2d] window around each FOMC date vs. a 30-day rolling baseline.
+  Recalibrate risk_discount_2d / risk_discount_5d / post_event_boost
+  to match the empirical distribution, not this initial guess.
+
+# ------------------------------------------------------------
+# Confidence adjustment rules
+# ------------------------------------------------------------
+adjustment_rules:
+  risk_discount_2d:    0.60   # confluence_strength multiplier if event <= 2 days away
+  risk_discount_5d:    0.80   # confluence_strength multiplier if event <= 5 days away
+  post_event_boost:    1.10   # multiplier within 2 days AFTER FOMC (volatility decay)
+  post_event_window_days: 2
+
+# Which event types trigger the discount. NFP/CPI move BTC less reliably
+# than FOMC historically — keep them in the same bucket for now but this
+# is itself something the backtest above should test independently
+# (it may turn out NFP deserves a smaller discount than FOMC).
+high_impact_event_types:
+  - FOMC
+  - CPI
+  - NFP
+  - PCE
+  - GDP
+
+# ------------------------------------------------------------
+# Scheduled FOMC dates — verified against federalreserve.gov
+# Decision day only (second day of the two-day meeting, when the
+# statement and rate decision are released at 14:00 ET).
+# ------------------------------------------------------------
+FOMC:
+  - "2026-01-28"
+  - "2026-03-18"
+  - "2026-04-29"
+  - "2026-06-17"
+  - "2026-07-29"
+  - "2026-09-16"
+  - "2026-10-28"
+  - "2026-12-09"
+
+# ------------------------------------------------------------
+# NFP — Non-Farm Payrolls, released first Friday of each month
+# at 08:30 ET by the Bureau of Labor Statistics. This is reliable
+# enough to compute algorithmically (see economic_calender.py
+# `_first_friday()`), so this list is a fallback/override only —
+# leave empty unless BLS publishes an exception for a given month.
+NFP_overrides: []
+
+# ------------------------------------------------------------
+# CPI — released by BLS, typically the second week of each month.
+# Unlike NFP this date is NOT mechanically predictable from a rule,
+# it must be pulled from the BLS release schedule directly:
+# https://www.bls.gov/schedule/news_release/cpi.htm
+# TODO: fill with verified dates before relying on days_to_cpi in
+# live signals. Currently empty — engine will return None/no-event
+# for CPI until this list is populated.
+CPI: []
+
+# ------------------------------------------------------------
+# PCE — released by BEA, typically last Friday of each month.
+# Same caveat as CPI — pull from bea.gov release schedule.
+PCE: []
+
+# ------------------------------------------------------------
+# GDP — released by BEA, quarterly (advance/second/third estimates).
+# Pull from bea.gov release schedule.
+GDP: []

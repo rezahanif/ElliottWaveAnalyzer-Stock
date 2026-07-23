@@ -1,0 +1,32 @@
+=============================================================================
+Elliott Wave Analyzer — Live Web Dashboard Setup
+=============================================================================
+
+To serve the Elliott Wave confluence dashboard on your local network, follow
+these simple steps on your Ubuntu Home Server:
+
+1. Copy the systemd service file to the system directory:
+   sudo cp scripts/elliott-web.service /etc/systemd/system/
+
+2. Reload systemd daemon to recognize the new service:
+   sudo systemctl daemon-reload
+
+3. Enable and start the web dashboard service:
+   sudo systemctl enable --now elliott-web.service
+
+4. Verify that the web server is running:
+   sudo systemctl status elliott-web.service
+
+5. Find your server's local IP address on your home network:
+   ip route get 1.1.1.1 | awk '{print $7}'
+
+6. Access the live dashboard from any device (phone, tablet, or Mac) connected to the same WiFi network by opening the URL:
+   http://<YOUR-SERVER-IP>:8080/confluence_visualization.html
+
+7. Setting up the Economic Event Notifier (Systemd Timer):
+   To automate the economic calendar notification engine, install the notifier timer:
+   sudo cp scripts/elliott-notifier.service /etc/systemd/system/
+   sudo cp scripts/elliott-notifier.timer /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now elliott-notifier.timer
+   sudo systemctl status elliott-notifier.timer

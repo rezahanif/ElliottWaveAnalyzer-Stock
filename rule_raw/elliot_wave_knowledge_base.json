@@ -1,0 +1,320 @@
+{
+    "elliott_wave_knowledge_base": {
+        "canonical_patterns": {
+            "zigzag_family": [
+                {
+                    "id": "zigzag",
+                    "name": "Zigzag",
+                    "structure": "5-3-5",
+                    "components": {
+                        "A": 5,
+                        "B": 3,
+                        "C": 5
+                    },
+                    "behavior": [
+                        "sharp_correction",
+                        "directional",
+                        "counter_trend"
+                    ],
+                    "rules": [
+                        "B_usually_retraces_38_to_61_percent_of_A",
+                        "B_rarely_exceeds_A_start",
+                        "C_usually_equals_A_or_1_618x_A"
+                    ]
+                },
+                {
+                    "id": "double_zigzag",
+                    "name": "Double Zigzag",
+                    "structure": "W-X-Y",
+                    "internal_structure": "(5-3-5)-(3)-(5-3-5)",
+                    "behavior": [
+                        "deep_correction",
+                        "directional"
+                    ],
+                    "rules": [
+                        "X_is_corrective_3_wave",
+                        "Y_is_another_zigzag"
+                    ]
+                },
+                {
+                    "id": "triple_zigzag",
+                    "name": "Triple Zigzag",
+                    "structure": "W-X-Y-X-Z",
+                    "internal_structure": "(5-3-5)-(3)-(5-3-5)-(3)-(5-3-5)",
+                    "behavior": [
+                        "very_deep_correction",
+                        "rare"
+                    ]
+                }
+            ],
+            "flat_family": [
+                {
+                    "id": "regular_flat",
+                    "name": "Regular Flat",
+                    "structure": "3-3-5",
+                    "components": {
+                        "A": 3,
+                        "B": 3,
+                        "C": 5
+                    },
+                    "behavior": [
+                        "sideways_correction"
+                    ],
+                    "rules": [
+                        "B_retraces_near_100_percent_of_A",
+                        "C_breaks_A_end"
+                    ]
+                },
+                {
+                    "id": "expanded_flat",
+                    "name": "Expanded Flat",
+                    "structure": "3-3-5",
+                    "components": {
+                        "A": 3,
+                        "B": 3,
+                        "C": 5
+                    },
+                    "behavior": [
+                        "false_break",
+                        "liquidity_sweep",
+                        "stop_hunt"
+                    ],
+                    "rules": [
+                        "B_exceeds_A_start",
+                        "C_extends_beyond_A_end",
+                        "most_common_flat_variation"
+                    ]
+                },
+                {
+                    "id": "running_flat",
+                    "name": "Running Flat",
+                    "structure": "3-3-5",
+                    "components": {
+                        "A": 3,
+                        "B": 3,
+                        "C": 5
+                    },
+                    "behavior": [
+                        "trend_strength"
+                    ],
+                    "rules": [
+                        "B_exceeds_A_start",
+                        "C_fails_to_break_A_end"
+                    ]
+                }
+            ],
+            "triangle_family": [
+                {
+                    "id": "contracting_triangle",
+                    "name": "Contracting Triangle",
+                    "structure": "3-3-3-3-3",
+                    "legs": [
+                        "A",
+                        "B",
+                        "C",
+                        "D",
+                        "E"
+                    ],
+                    "behavior": [
+                        "volatility_contraction",
+                        "continuation_pattern"
+                    ],
+                    "rules": [
+                        "trendlines_converge",
+                        "breakout_usually_follows_prior_trend"
+                    ]
+                },
+                {
+                    "id": "barrier_triangle",
+                    "name": "Barrier Triangle",
+                    "structure": "3-3-3-3-3",
+                    "behavior": [
+                        "sideways_consolidation"
+                    ],
+                    "rules": [
+                        "one_boundary_is_almost_horizontal"
+                    ]
+                },
+                {
+                    "id": "expanding_triangle",
+                    "name": "Expanding Triangle",
+                    "structure": "3-3-3-3-3",
+                    "behavior": [
+                        "volatility_expansion"
+                    ],
+                    "rules": [
+                        "trendlines_diverge",
+                        "each_leg_larger_than_previous"
+                    ]
+                },
+                {
+                    "id": "running_triangle",
+                    "name": "Running Triangle",
+                    "structure": "3-3-3-3-3",
+                    "behavior": [
+                        "strong_trend_continuation"
+                    ],
+                    "rules": [
+                        "wave_B_exceeds_wave_A_start"
+                    ]
+                }
+            ],
+            "combination_family": [
+                {
+                    "id": "double_three",
+                    "name": "Double Three",
+                    "structure": "W-X-Y",
+                    "behavior": [
+                        "sideways",
+                        "complex_correction"
+                    ],
+                    "rules": [
+                        "W_and_Y_are_corrective_patterns",
+                        "X_is_connector"
+                    ],
+                    "allowed_combinations": [
+                        "flat_x_flat",
+                        "flat_x_zigzag",
+                        "zigzag_x_flat",
+                        "triangle_x_flat",
+                        "flat_x_triangle"
+                    ]
+                },
+                {
+                    "id": "triple_three",
+                    "name": "Triple Three",
+                    "structure": "W-X-Y-X-Z",
+                    "behavior": [
+                        "very_complex",
+                        "time_consuming"
+                    ],
+                    "rules": [
+                        "three_corrective_patterns_linked_by_X_waves"
+                    ]
+                }
+            ]
+        },
+        "community_vocabulary": [
+            {
+                "term": "ABC Correction",
+                "possible_canonical_patterns": [
+                    "zigzag",
+                    "regular_flat",
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "Non Ideal ABC",
+                "possible_canonical_patterns": [
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "Flat Correction",
+                "possible_canonical_patterns": [
+                    "regular_flat",
+                    "expanded_flat",
+                    "running_flat"
+                ]
+            },
+            {
+                "term": "Complex Correction",
+                "possible_canonical_patterns": [
+                    "double_three",
+                    "triple_three",
+                    "double_zigzag",
+                    "triple_zigzag"
+                ]
+            },
+            {
+                "term": "Deep Correction",
+                "possible_canonical_patterns": [
+                    "double_zigzag",
+                    "triple_zigzag"
+                ]
+            },
+            {
+                "term": "Running Correction",
+                "possible_canonical_patterns": [
+                    "running_flat",
+                    "running_triangle"
+                ]
+            },
+            {
+                "term": "Liquidity Grab",
+                "possible_canonical_patterns": [
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "Stop Hunt",
+                "possible_canonical_patterns": [
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "False Break",
+                "possible_canonical_patterns": [
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "Bull Trap",
+                "possible_canonical_patterns": [
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "Bear Trap",
+                "possible_canonical_patterns": [
+                    "expanded_flat"
+                ]
+            },
+            {
+                "term": "Sideways Correction",
+                "possible_canonical_patterns": [
+                    "regular_flat",
+                    "expanded_flat",
+                    "running_flat",
+                    "contracting_triangle",
+                    "barrier_triangle",
+                    "double_three",
+                    "triple_three"
+                ]
+            }
+        ],
+        "pattern_classifier_rules": [
+            {
+                "if": "A=5_and_B=3_and_C=5",
+                "classify_as": "zigzag_family"
+            },
+            {
+                "if": "A=3_and_B=3_and_C=5",
+                "classify_as": "flat_family"
+            },
+            {
+                "if": "all_legs_are_3_wave",
+                "classify_as": "triangle_family"
+            },
+            {
+                "if": "contains_X_wave",
+                "classify_as": "combination_family"
+            },
+            {
+                "if": "B_exceeds_A_start",
+                "candidate_patterns": [
+                    "expanded_flat",
+                    "running_flat",
+                    "running_triangle"
+                ]
+            },
+            {
+                "if": "B_does_not_exceed_A_start",
+                "candidate_patterns": [
+                    "zigzag",
+                    "regular_flat"
+                ]
+            }
+        ]
+    }
+}

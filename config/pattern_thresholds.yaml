@@ -1,0 +1,18 @@
+# Baseline thresholds for geometric pattern detection and classification
+min_pivots_per_side: 2
+min_r_squared_for_pattern: 0.30
+
+# Slope and variance tolerances
+flat_slope_threshold_pct_per_bar: 0.015
+parallel_slope_diff_threshold_pct_per_bar: 0.02
+constant_width_tolerance_pct: 3.5
+min_convergence_pct: 3.5
+
+# Confidence scoring weights (must sum to 1.0)
+confidence_weights:
+  r_squared_avg: 0.40
+  pivot_count_bonus: 0.30
+  convergence_clarity: 0.30
+
+# Number of pivots at which the pivot count bonus saturates
+pivot_count_bonus_saturation: 8

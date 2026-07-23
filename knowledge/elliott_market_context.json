@@ -1,0 +1,38 @@
+[
+  {
+    "term": "Liquidity Grab",
+    "description": "Temporary price movement beyond a key swing high or low designed to trigger stop-loss orders and gather liquidity before reversing."
+  },
+  {
+    "term": "Stop Hunt",
+    "description": "A deliberate market movement to trigger stop-loss orders clustered around obvious support or resistance levels."
+  },
+  {
+    "term": "Bull Trap",
+    "description": "A false upside breakout that induces retail traders to buy, only to reverse sharply downward and trap them."
+  },
+  {
+    "term": "Bear Trap",
+    "description": "A false downside breakout that induces retail traders to short, only to reverse sharply upward and trap them."
+  },
+  {
+    "term": "Break of Structure (BOS)",
+    "description": "The continuation of a trend where the price successfully breaks the last structural swing level (high in an uptrend, low in a downtrend)."
+  },
+  {
+    "term": "Market Structure Shift (MSS)",
+    "description": "The break of a counter-structural swing level, indicating a potential reversal of the current trend direction."
+  },
+  {
+    "term": "Accumulation",
+    "description": "A sideways trading range indicating that institutions are building long positions in preparation for a markup phase."
+  },
+  {
+    "term": "Distribution",
+    "description": "A sideways trading range indicating that institutions are offloading long positions and building short positions in preparation for a markdown phase."
+  },
+  {
+    "term": "Fair Value Gap (FVG)",
+    "description": "A three-candle structural imbalance in price action where the first candle's wick and the third candle's wick do not overlap, leaving a gap of unfilled liquidity."
+  }
+]
