@@ -1,0 +1,30 @@
+Running BMRI closing analysis...
+
+  [stock-alert] DRY RUN — message that would be sent:
+  📊 <b>BMRI SWING FORECAST [1D]</b>
+  <code>2026-07-23 09:08 (UTC+7)</code>
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  💰 Current Price: <b>IDR 4,350.00</b>
+  📐 Signal: <b>🟡 WATCH</b>
+  🛑 Invalidation: <b>IDR 3,781.00</b>
+  📐 Fibonacci Zone: <code>$4,757.81 - $5,121.98</code>
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🤖 AI Forecast: <b>Unavailable</b> — Reason: No trained BMRI checkpoint
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🔍 <b>Market Context Cascade:</b>
+  • IHSG Bias: <b>NEUTRAL</b>
+  • Sector Outperforming: <b>False</b>
+  • Stock Outperforming: <b>False</b>
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📊 <b>Confidence Model (Overall: 0.69)</b>
+  <code>  • Technical     score=0.78  weight=0.28
+    • Wave          score=0.91  weight=0.22
+    • Market        score=0.15  weight=0.22
+    • Fundamental   score=0.90  weight=0.17
+    • News          score=0.80  weight=0.11
+    • Ai_Forecast   score=0.00  weight=0.00</code>
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  💡 <b>Reasoning Details:</b>
+  • Bullish wave confirmed, but price is not near Fibonacci support zone yet ($4,757.81 - $5,121.98)
+  
+Orchestration complete ✅
