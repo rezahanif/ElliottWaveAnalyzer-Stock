@@ -20,6 +20,8 @@ from src.btc.pivots.pattern_detector import PatternDetector, PatternMatch
 from src.btc.fib_engine.trendline import Trendline, fit_trendline
 from src.btc.fib_engine.fibonacci import FibonacciEngine, ClusterResult
 from src.btc.confluence.cluster_check import is_confluent
+from src.stock.predict import predict_tft
+from src.stock.forecast.fusion import fuse, FusionResult
 
 
 class StockAnalyzer:
@@ -139,7 +141,8 @@ class StockAnalyzer:
                             version=version,
                         )
 
-        return {
+        # 5. Deterministic result (unchanged — Rule Engine decision authority)
+        deterministic = {
             "symbol": self.symbol,
             "timeframe": self.timeframe,
             "df_layers": df_layers,
@@ -149,3 +152,18 @@ class StockAnalyzer:
             "invalidation": invalidation,
             "direction": direction,
         }
+
+        # 6. Attempt TFT forecast (returns None if no checkpoint — graceful)
+        tft_result = predict_tft(self.symbol, window_df=df_layers)
+
+        # 7. Fusion Layer — pass-through when TFT unavailable
+        fusion_result = fuse(deterministic, tft_result)
+
+        # 8. Return deterministic fields + AI status fields
+        #    Existing fields are byte-for-byte identical (pass-through guarantee)
+        result = dict(deterministic)  # copy all deterministic fields
+        result["ai_forecast_status"] = fusion_result.ai_forecast_status
+        result["ai_forecast_reason"] = fusion_result.ai_forecast_reason
+        result["ai_forecast_data"] = fusion_result.ai_forecast_data
+        result["fusion"] = fusion_result
+        return result
