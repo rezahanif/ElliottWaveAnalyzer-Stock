@@ -144,7 +144,8 @@ def train_tft(
     """
     from pytorch_forecasting import TimeSeriesDataSet, TemporalFusionTransformer
     from pytorch_forecasting.metrics import QuantileLoss
-    import pytorch_lightning as pl
+    from lightning.pytorch import Trainer
+    from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
     from torch.utils.data import DataLoader
     
     config = config or BMRIModelConfig()
@@ -194,24 +195,33 @@ def train_tft(
     # Verify NO BTC weights loaded
     logger.info("Training from scratch - NO BTC weights loaded")
     
-    # Create trainer with compatible settings
-    trainer = pl.Trainer(
+    # Create checkpoint directory
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Create trainer with correct imports
+    trainer = Trainer(
         max_epochs=config.max_epochs,
         accelerator="cpu",
-        devices=1,
         gradient_clip_val=0.1,
         limit_train_batches=30,
         callbacks=[
-            pl.callbacks.EarlyStopping(
+            EarlyStopping(
                 monitor="val_loss", 
                 min_delta=1e-4, 
                 patience=10, 
                 verbose=False, 
                 mode="min"
+            ),
+            ModelCheckpoint(
+                dirpath=str(checkpoint_path.parent),
+                filename=checkpoint_path.stem,
+                monitor="val_loss",
+                mode="min",
+                save_top_k=1,
             )
         ],
         logger=False,
-        enable_checkpointing=False,  # We'll save manually
+        enable_checkpointing=True,
     )
     
     # Train
