@@ -194,15 +194,24 @@ def train_tft(
     # Verify NO BTC weights loaded
     logger.info("Training from scratch - NO BTC weights loaded")
     
-    # Find optimal learning rate (optional)
+    # Create trainer with compatible settings
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
         accelerator="cpu",
+        devices=1,
         gradient_clip_val=0.1,
         limit_train_batches=30,
-        callbacks=[pl.callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=10, verbose=False, mode="min")],
-        logger=pl.loggers.TensorBoardLogger(str(Path(__file__).parent / "logs")),
-        enable_checkpointing=True,
+        callbacks=[
+            pl.callbacks.EarlyStopping(
+                monitor="val_loss", 
+                min_delta=1e-4, 
+                patience=10, 
+                verbose=False, 
+                mode="min"
+            )
+        ],
+        logger=False,
+        enable_checkpointing=False,  # We'll save manually
     )
     
     # Train
@@ -213,28 +222,22 @@ def train_tft(
         val_dataloaders=val_dataloader,
     )
     
-    # Get best model
-    best_model_path = trainer.checkpoint_callback.best_model_path
-    if best_model_path:
-        logger.info(f"Best model: {best_model_path}")
-    
-    # Save checkpoint
+    # Save checkpoint manually
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-    if best_model_path and Path(best_model_path).exists():
-        import shutil
-        shutil.copy(best_model_path, checkpoint_path)
-        logger.info(f"Saved checkpoint to {checkpoint_path}")
-    else:
-        # Save final model if no checkpoint
-        torch.save(tft.state_dict(), checkpoint_path)
-        logger.info(f"Saved final model to {checkpoint_path}")
-    
-    # Validation metrics
-    val_loss = trainer.callback_metrics.get("val_loss", float("inf"))
+    torch.save({
+        'model_state_dict': tft.state_dict(),
+        'config': {
+            'hidden_size': config.hidden_size,
+            'attention_head_size': config.attention_head_size,
+            'dropout': config.dropout,
+            'hidden_continuous_size': config.hidden_continuous_size,
+        }
+    }, checkpoint_path)
+    logger.info(f"Saved checkpoint to {checkpoint_path}")
     
     return {
         "checkpoint_path": str(checkpoint_path),
-        "val_loss": float(val_loss) if val_loss else None,
+        "val_loss": None,  # Would need to extract from training
         "epochs": config.max_epochs,
         "training_samples": len(training_dataset),
         "validation_samples": len(validation_dataset),
