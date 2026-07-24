@@ -1,0 +1,10 @@
+# Cache & Data files - don't include in context window
+data/
+logs/
+*.parquet
+*.json
+*.ckpt
+*.db
+*.pt
+.venv/
+.env
