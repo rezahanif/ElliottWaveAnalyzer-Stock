@@ -120,6 +120,14 @@ def handle_report(chat_id: str, args: List[str]) -> str:
     fundamentals = fetch_fundamentals("BMRI.JK")
     news = fetch_news_and_sentiment("BMRI.JK")
     
+    # Fetch last price (previous day closing price)
+    df_stock = fetch_price_data("BMRI.JK")
+    last_price = None
+    last_date = None
+    if df_stock is not None and len(df_stock) > 0:
+        last_price = df_stock.iloc[-1]["close"]
+        last_date = df_stock.iloc[-1].get("date", "")
+    
     # Check AI forecast status (no full analysis needed — just checkpoint check)
     from src.stock.predict import predict_tft, CHECKPOINT_DIR
     from pathlib import Path
@@ -130,9 +138,18 @@ def handle_report(chat_id: str, args: List[str]) -> str:
     else:
         ai_line = "🤖 AI Forecast: <b>Unavailable</b> — Reason: No trained BMRI checkpoint"
     
+    # Build price line
+    price_line = ""
+    if last_price is not None:
+        price_line = f"💰 Last Price: <b>IDR {last_price:,.2f}</b>"
+        if last_date:
+            price_line += f" ({last_date})"
+        price_line += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    
     msg = (
         f"📝 <b>BMRI FUNDAMENTAL & SENTIMENT REPORT</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{price_line}"
         f"{ai_line}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📈 <b>Fundamentals:</b>\n"
