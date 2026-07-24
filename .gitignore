@@ -112,3 +112,6 @@ Thumbs.db
 
 # Project specific
 
+
+# Data files
+/data/
