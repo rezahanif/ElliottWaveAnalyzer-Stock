@@ -73,6 +73,115 @@ class TFTResult:
         return max(0.0, min(1.0, 1.0 - spread))
 
 
+def _complete_feature_set(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure df contains ALL features the TFT model was trained on.
+
+    Background:
+      The trained checkpoint's hparams.time_varying_unknown_reals was set
+      during training to include every numerical feature in the stock schema
+      (rsi_14, macd, macd_signal, macd_hist, atr_14, atr_20, ema_20, ema_50,
+      ema_200, bb_upper, bb_lower, bb_width, obv, adx_14, plus wave / market /
+      fundamental / macro / calendar / news numericals). If any of these are
+      missing at inference time, model.predict() raises KeyError: '<feature>'.
+
+    This function rebuilds the technical indicators deterministically from
+    OHLCV (no look-ahead — same math as src/stock/features/indicators.py used
+    during training) and fills any remaining missing schema features with the
+    same defaults that FeatureBuilder.build_all() uses in its fallback paths.
+    """
+    from src.stock.features.indicators import add_stock_indicators
+    from src.stock.features.schema import get_default_schema
+
+    schema = get_default_schema()
+    out = df.copy()
+
+    # 1. Recompute technical indicators if any are missing.
+    #    add_stock_indicators is idempotent — it overwrites existing columns
+    #    with freshly-computed values, so passing a df that already has some
+    #    indicators is safe.
+    tech_feats = {f["name"] for f in schema.schema["technical"]["features"]}
+    if not tech_feats.issubset(out.columns):
+        out = add_stock_indicators(out)
+
+    # 2. Wave features — mirrors FeatureBuilder.build_wave() fallback.
+    if "wave_direction" not in out.columns:
+        out["wave_direction"] = "neutral"
+    if "wave_degree" not in out.columns:
+        out["wave_degree"] = "unknown"
+    if "fib_level" not in out.columns:
+        out["fib_level"] = 0.5
+    if "fib_cluster_strength" not in out.columns:
+        out["fib_cluster_strength"] = 0.0
+    if "invalidation_distance" not in out.columns:
+        # Same formula as FeatureBuilder.build_wave()
+        if "atr_14" in out.columns and "close" in out.columns:
+            out["invalidation_distance"] = out["atr_14"] * 3 / out["close"]
+        else:
+            out["invalidation_distance"] = 0.0
+
+    # 3. Market context — mirrors FeatureBuilder.build_all() fallback.
+    if "ihsg_bias" not in out.columns:
+        out["ihsg_bias"] = "neutral"
+    if "ihsg_change_5d" not in out.columns:
+        out["ihsg_change_5d"] = 0.0
+    if "sector_outperforming" not in out.columns:
+        out["sector_outperforming"] = False
+    if "sector_relative_strength" not in out.columns:
+        out["sector_relative_strength"] = 0.0
+    if "stock_outperforming" not in out.columns:
+        out["stock_outperforming"] = False
+    if "stock_relative_strength" not in out.columns:
+        out["stock_relative_strength"] = 0.0
+
+    # 4. Fundamentals — mirrors FeatureBuilder.build_fundamental(df, {}).
+    for key in ["pe_ratio", "pb_ratio", "roe", "div_yield", "revenue_growth"]:
+        if key not in out.columns:
+            out[key] = 0.0
+
+    # 5. Macro — mirrors FeatureBuilder.build_macro() placeholders.
+    if "usd_idr_rate" not in out.columns:
+        out["usd_idr_rate"] = 15500.0
+    if "bi_rate" not in out.columns:
+        out["bi_rate"] = 5.75
+    if "inflation_yoy" not in out.columns:
+        out["inflation_yoy"] = 0.03
+
+    # 6. Calendar — mirrors FeatureBuilder.build_calendar() placeholders.
+    if "days_to_fomc" not in out.columns:
+        out["days_to_fomc"] = 999
+    if "days_since_fomc" not in out.columns:
+        out["days_since_fomc"] = 999
+    if "days_to_nfp" not in out.columns:
+        out["days_to_nfp"] = 999
+    if "high_impact_within_5d" not in out.columns:
+        out["high_impact_within_5d"] = False
+    if "high_impact_within_2d" not in out.columns:
+        out["high_impact_within_2d"] = False
+
+    # 7. News — mirrors FeatureBuilder.build_news(df, {}) fallback.
+    if "sentiment_score" not in out.columns:
+        out["sentiment_score"] = 0.0
+    if "sentiment_class" not in out.columns:
+        out["sentiment_class"] = "neutral"
+    if "news_count_24h" not in out.columns:
+        out["news_count_24h"] = 0
+
+    # 8. Final safety net: any schema feature still missing gets a default.
+    for feat in schema.all_features:
+        if feat not in out.columns:
+            if schema.is_categorical(feat):
+                out[feat] = "unknown"
+            else:
+                out[feat] = 0.0
+
+    # 9. Replace inf with 0 — same treatment as predict_tft() does below.
+    import numpy as np
+    out = out.replace([np.inf, -np.inf], 0.0)
+
+    return out
+
+
 def _build_inference_dataset(
     window_df: pd.DataFrame,
     max_encoder_length: int = 60,
@@ -90,7 +199,13 @@ def _build_inference_dataset(
 
     schema = get_default_schema()
 
-    df = window_df.copy()
+    # CRITICAL: complete the feature set BEFORE building the dataset.
+    # The trained TFT checkpoint expects every numerical feature in the
+    # schema to be present in time_varying_unknown_reals. If the caller
+    # passed a partial window (e.g. analyzer.py's df_layers which only
+    # has volatility columns), we recompute the technical indicators
+    # deterministically and fill the rest with training-matched defaults.
+    df = _complete_feature_set(window_df)
     df["symbol"] = "BMRI_JK"
     df["time_idx"] = range(len(df))
 
@@ -98,6 +213,9 @@ def _build_inference_dataset(
     df["target_pct"] = df["close"].pct_change().shift(-1)
     df = df.ffill().bfill()
 
+    # After _complete_feature_set(), every schema numerical feature is
+    # guaranteed to be in df.columns — the filter below is now a no-op
+    # safety check, kept for symmetry with train.py.
     time_varying_unknown_reals = ["target_pct"]
     for feat in schema.numerical_features:
         if feat in df.columns:
