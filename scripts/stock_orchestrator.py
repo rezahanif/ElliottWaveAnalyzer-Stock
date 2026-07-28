@@ -10,6 +10,7 @@ Exits silently on IDX holidays and weekends.
 
 from __future__ import annotations
 
+import torch
 import argparse
 import os
 import sys
@@ -68,6 +69,14 @@ def run_morning_update(dry_run: bool = False):
     send_telegram(header + msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
 
 
+def run_midday_update(dry_run: bool = False):
+    """Run BMRI midday technical update."""
+    print("Running BMRI midday technical update...")
+    msg = handle_bmri("", [])
+    token, ids = load_stock_telegram_config()
+    send_telegram(msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
+
+
 def run_weekly_review(dry_run: bool = False):
     """Run weekly strategy review on Saturday."""
     print("Running BMRI weekly review...")
@@ -114,8 +123,7 @@ def main():
         if args.action == "morning":
             run_morning_update(dry_run=args.dry_run)
         elif args.action == "midday":
-            # Midday is a silent run or light update, default to quiet context check
-            print("Midday context run completed.")
+            run_midday_update(dry_run=args.dry_run)
         elif args.action == "closing":
             run_closing_analysis(dry_run=args.dry_run)
         elif args.action == "weekly":
