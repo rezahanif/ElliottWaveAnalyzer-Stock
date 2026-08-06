@@ -69,6 +69,19 @@ from src.btc.pivots.zigzag import ZigZagDetector
 from src.btc.pivots.pivot_schema import SwingType
 from src.btc.fib_engine.fibonacci import FibonacciEngine
 
+# Order-book conviction layer — phase 3 integration.
+# Heavy/optional imports are guarded: a missing ccxt or fetch failure
+# degrades gracefully to a neutral multiplier (×1.0) and never breaks
+# the main pipeline.
+try:
+    from src.btc.orderbook.fetcher import fetch_multi_exchange_orderbook
+    from src.btc.orderbook.scorer import OrderBookConvictionScorer, ConvictionReport, score_from_snapshot_dict
+    from src.btc.orderbook.snapshot import load_latest_snapshot
+    ORDERBOOK_LAYER_AVAILABLE = True
+except ImportError as _e:
+    ORDERBOOK_LAYER_AVAILABLE = False
+    _ORDERBOOK_IMPORT_ERROR = str(_e)
+
 # Optional heavy imports — guarded to avoid hard failures at import time
 try:
     import ccxt
@@ -578,7 +591,7 @@ def compute_fib_targets(macro_pivots, version: str = "v5_relaxed") -> Optional[D
 
 
 # ─────────────────────────────────────────────────────────────
-# Step 8: Calendar risk adjustment
+# Step 8: Calendar risk + Order-book conviction adjustment
 # ─────────────────────────────────────────────────────────────
 
 def apply_calendar_risk(strength: float, window_df: pd.DataFrame, lookback: int = 90) -> Tuple[float, str]:
@@ -609,6 +622,97 @@ def apply_calendar_risk(strength: float, window_df: pd.DataFrame, lookback: int 
 
 
     return round(strength, 4), risk_flag
+
+
+def apply_orderbook_conviction(
+    calendar_adj_strength: float,
+    wave_direction: str,
+    confluence_zone: Optional[Tuple[float, float]],
+    max_snapshot_age_seconds: int = 600,
+    config_path: str = "config/orderbook.yaml",
+) -> Tuple[float, str, Optional[Dict]]:
+    """
+    Fold the order-book conviction multiplier into the calendar-adjusted
+    strength. Reads the most recent snapshot from data/orderbook/ written
+    by the standalone elliott-orderbook notifier (every 5 min). If the
+    snapshot is stale or unavailable, falls back to a fresh inline fetch
+    so the main pipeline still gets OB signal even if the notifier is down.
+
+    Returns (final_strength, ob_flag_string, ob_record_dict_for_sqlite).
+    The ob_record_dict contains the 4 columns persisted to SQLite:
+        ob_conviction, ob_bid_ask_imbalance, ob_dominant_exchange, ob_flag
+    """
+    if not ORDERBOOK_LAYER_AVAILABLE:
+        neutral_record = {
+            "ob_conviction": 1.0,
+            "ob_bid_ask_imbalance": 0.0,
+            "ob_dominant_exchange": "",
+            "ob_flag": "Order book layer unavailable (import error)",
+        }
+        return calendar_adj_strength, "", neutral_record
+
+    report = None
+    source = None
+
+    # Try the cached snapshot first (fast path — no network)
+    try:
+        cached = load_latest_snapshot(max_age_seconds=max_snapshot_age_seconds)
+        if cached and cached.get("conviction"):
+            # Re-score the cached snapshot against the current wave direction
+            # (the standalone notifier scores with wave_direction='neutral'
+            # because it doesn't know the wave context).
+            report = score_from_snapshot_dict(
+                cached, wave_direction=wave_direction,
+                confluence_zone=confluence_zone,
+                config_path=config_path,
+            )
+            source = "cached"
+    except Exception as e:
+        print(f"  [orderbook] Failed to load cached snapshot: {e}")
+
+    # Fallback: inline fetch (slow path — ~3 seconds of network)
+    if report is None:
+        try:
+            print("  [orderbook] No recent cached snapshot — fetching live from 3 exchanges...")
+            snaps = fetch_multi_exchange_orderbook(config_path=config_path)
+            scorer = OrderBookConvictionScorer(config_path=config_path)
+            report = scorer.compute(
+                snaps, wave_direction=wave_direction,
+                confluence_zone=confluence_zone,
+            )
+            source = "live"
+        except Exception as e:
+            print(f"  [orderbook] Live fetch failed: {e}")
+            neutral_record = {
+                "ob_conviction": 1.0,
+                "ob_bid_ask_imbalance": 0.0,
+                "ob_dominant_exchange": "",
+                "ob_flag": f"Order book fetch failed: {e}",
+            }
+            return calendar_adj_strength, "", neutral_record
+
+    final_strength = calendar_adj_strength * report.multiplier
+    final_strength = max(0.0, min(1.0, final_strength))
+    final_strength = round(final_strength, 4)
+
+    # Dominant exchange = the exchange with the largest wall on the
+    # dominant side (or any wall if no dominant side).
+    dominant_exchange = ""
+    if report.bid_walls or report.ask_walls:
+        all_walls = list(report.bid_walls) + list(report.ask_walls)
+        all_walls.sort(key=lambda w: w.usd_value, reverse=True)
+        if all_walls:
+            dominant_exchange = all_walls[0].exchange
+
+    ob_record = {
+        "ob_conviction":          report.multiplier,
+        "ob_bid_ask_imbalance":   report.weighted_imbalance,
+        "ob_dominant_exchange":   dominant_exchange,
+        "ob_flag":                report.flag_string,
+    }
+    flag_out = report.flag_string + (f" (source: {source})" if source else "")
+    print(f"  [orderbook] {flag_out}")
+    return final_strength, flag_out, ob_record
 
 
 # ─────────────────────────────────────────────────────────────
@@ -660,6 +764,22 @@ def init_db(db_path: str):
         except Exception as e:
             print(f"  [db] Migration failed: {e}")
 
+    # Order-book conviction columns (Phase 3 integration). Additive — never
+    # breaks existing rows; defaults to NULL/1.0.
+    ob_columns = [
+        ("ob_conviction",         "REAL"),  # multiplier applied (0.5 - 1.10)
+        ("ob_bid_ask_imbalance",  "REAL"),  # weighted avg imbalance [-1, +1]
+        ("ob_dominant_exchange",  "TEXT"),  # exchange with largest wall
+        ("ob_flag",               "TEXT"),  # human-readable summary
+    ]
+    for col_name, col_type in ob_columns:
+        if col_name not in columns:
+            try:
+                conn.execute(f"ALTER TABLE predictions ADD COLUMN {col_name} {col_type}")
+                print(f"  [db] Migration: Added '{col_name}' column to predictions table.")
+            except Exception as e:
+                print(f"  [db] Migration failed for {col_name}: {e}")
+
     conn.commit()
     conn.close()
 
@@ -703,6 +823,9 @@ def build_telegram_message(
     risk_flag:    str,
     current_price: float,
     version:      str = "v5_relaxed",
+    calendar_adj_strength: Optional[float] = None,
+    raw_strength: Optional[float] = None,
+    ob_flag:      str = "",
 ) -> str:
     """Format the Telegram alert per Section 11 spec."""
     direction = fib_result.get('direction', 'bearish') if fib_result else 'bearish'
@@ -721,12 +844,21 @@ def build_telegram_message(
     ]
 
     if valid:
+        # Build the confluence strength chain: raw → cal → ob (when available)
+        if raw_strength is not None and calendar_adj_strength is not None:
+            chain = (
+                f" (raw: {raw_strength:.2f} → cal: {calendar_adj_strength:.2f} → ob: {adj_strength:.2f})"
+            )
+        else:
+            chain = f" (raw: {fib_result['cluster_strength']:.2f} → adj: {adj_strength:.2f})"
+
         lines += [
-            f"✅ <b>CONFLUENCE {'CONFIRMED' if adj_strength >= 0.6 else 'WEAK'}</b>"
-            f" (raw: {fib_result['cluster_strength']:.2f} → adj: {adj_strength:.2f})",
+            f"✅ <b>CONFLUENCE {'CONFIRMED' if adj_strength >= 0.6 else 'WEAK'}</b>{chain}",
         ]
         if risk_flag:
             lines.append(f"⚠️  {risk_flag}")
+        if ob_flag:
+            lines.append(ob_flag)
         lines += [
             "",
             f"SCENARIO A   ${fib_result['scenario_a_price']:>10,.2f}   → 10–20% entry",
@@ -818,10 +950,25 @@ def run_pipeline(
     # Step 7: Fibonacci cluster
     fib_result = compute_fib_targets(macro_pivots, version=version)
 
-    # Step 8: Calendar risk adjustment
+    # Step 8a: Calendar risk adjustment
     raw_strength = fib_result['cluster_strength'] if fib_result else 0.0
 
-    adj_strength, risk_flag = apply_calendar_risk(raw_strength, window_df)
+    calendar_adj_strength, risk_flag = apply_calendar_risk(raw_strength, window_df)
+
+    # Step 8b: Order-book conviction multiplier (folded on top of calendar adj)
+    wave_direction = (fib_result.get('direction') if fib_result else 'neutral') or 'neutral'
+    confluence_zone = None
+    if fib_result and fib_result.get('cluster_valid'):
+        confluence_zone = (
+            float(fib_result.get('cluster_lower', 0.0)),
+            float(fib_result.get('cluster_upper', 0.0)),
+        )
+    ob_strength, ob_flag, ob_record = apply_orderbook_conviction(
+        calendar_adj_strength=calendar_adj_strength,
+        wave_direction=wave_direction,
+        confluence_zone=confluence_zone,
+    )
+    adj_strength = ob_strength
 
     candle_close = float(df_layers['close'].iloc[-1])
     current_price = fetch_spot_price(fallback_price=candle_close)
@@ -847,6 +994,9 @@ def run_pipeline(
         "macro_pivot_count":     len(macro_pivots),
         "micro_pivot_count":     len(micro_pivots),
     }
+    # Attach order-book conviction fields (Phase 3 integration)
+    if ob_record:
+        record.update(ob_record)
     # Attach TFT quantiles if available
     if tft_result:
         record.update(tft_result)
@@ -859,13 +1009,16 @@ def run_pipeline(
         print("  [db] DRY RUN — SQLite write skipped")
 
     message = build_telegram_message(
-        timeframe     = timeframe,
-        fib_result    = fib_result,
-        tft_result    = tft_result,
-        adj_strength  = adj_strength,
-        risk_flag     = risk_flag,
-        current_price = current_price,
-        version       = version,
+        timeframe               = timeframe,
+        fib_result              = fib_result,
+        tft_result              = tft_result,
+        adj_strength            = adj_strength,
+        risk_flag               = risk_flag,
+        current_price           = current_price,
+        version                 = version,
+        calendar_adj_strength   = calendar_adj_strength,
+        raw_strength            = raw_strength,
+        ob_flag                 = ob_flag,
     )
 
     # Alert if confluence confirmed or significant structure found

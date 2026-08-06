@@ -12,46 +12,16 @@ import torch
 from pytorch_forecasting import TimeSeriesDataSet, TemporalFusionTransformer
 from pytorch_forecasting.metrics import QuantileLoss
 
+from src.btc.wave_model.schema import get_btc_schema
+
 # ── Feature Configurations ──────────────────────────────────────────────────
+# Schema-driven (see schema.py) — same FeatureSchema pattern as the stock side,
+# so the coin-agnostic recipe UI drives both asset classes through one API.
+_schema = get_btc_schema()
 
-KNOWN_FUTURE_REALS = [
-    "lunar_phase_sin",
-    "lunar_phase_cos",
-    "lunar_anomalistic_normalized",
-    "lunar_node_distance",
-    "mercury_retrograde",
-    "aspect_jupiter_uranus_intensity",
-    "aspect_mars_uranus_intensity",
-    "days_to_fomc",
-    "days_since_last_fomc",
-    "days_to_nfp",
-    "high_impact_within_5d",
-    "high_impact_within_2d",
-    "post_event_window",
-]
-
-UNKNOWN_PAST_REALS = [
-    "open_norm",
-    "high_norm",
-    "low_norm",
-    "close_norm",
-    "volume_norm",
-    "rsi_14",
-    "macd_line",
-    "macd_signal",
-    "macd_hist",
-    "atr_14_norm",
-    "bb_width",
-    "pattern_confidence",
-    "wave_match_confidence",
-]
-
-UNKNOWN_PAST_CATEGORICALS = [
-    "structure_token_id",
-    "wave_degree_id",
-    "pattern_type_id",
-    "correction_or_impulse_type_id",
-]
+KNOWN_FUTURE_REALS = _schema.get_features_for_group("known_future")
+UNKNOWN_PAST_REALS = _schema.get_features_for_group("unknown_past")
+UNKNOWN_PAST_CATEGORICALS = _schema.get_features_for_group("categoricals")
 
 TARGET = "close_pct_change"
 GROUP_IDS = ["asset_timeframe"]

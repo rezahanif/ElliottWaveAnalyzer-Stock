@@ -1,0 +1,127 @@
+# ============================================================
+# orderbook.yaml
+# Configuration for the BTC order-book conviction layer.
+#
+# Pulls L2 order-book snapshots from 3 exchanges (Binance, Coinbase, OKX)
+# via CCXT sync API. Detects buy (bid) walls and sell (ask) walls whose
+# USD value exceeds the configured threshold, then derives a conviction
+# multiplier applied to the calendar-adjusted confluence strength.
+#
+# Used by:
+#   src/btc/orderbook/fetcher.py        — multi-exchange fetch
+#   src/btc/orderbook/scorer.py         — conviction computation
+#   src/btc/orderbook/notifier.py       — standalone 5-min poll + alert
+#   scripts/btc/run_daily_analysis.py   — pipeline integration
+# ============================================================
+
+# ------------------------------------------------------------
+# Calibration status — read before trusting these multipliers
+# ------------------------------------------------------------
+# The multiplier bounds below are an UNVALIDATED PRIOR based on the
+# principle that liquidity-confirming order-book walls modestly
+# strengthen a wave-projected bias, while liquidity-blocking walls
+# should heavily penalise confidence (one side can fake the book
+# more easily than the other can defend it).
+# TODO: backtest against historical BTC data once ~30 days of
+# snapshots accumulate in data/orderbook/.
+calibration_status: "unvalidated_prior_v0.1"
+
+# ------------------------------------------------------------
+# Exchange configuration
+# ------------------------------------------------------------
+# All three exchanges expose public L2 order book endpoints without
+# authentication via CCXT. Symbols normalised to BTC/USDT (Coinbase
+# uses BTC/USD internally — handled automatically by CCXT unified
+# symbol resolution; we map it explicitly here to avoid ambiguity).
+exchanges:
+  binance:
+    symbol: "BTC/USDT"
+    enabled: true
+    depth: 100               # number of price levels per side
+  coinbase:
+    symbol: "BTC/USDT"       # CCXT maps to BTC/USD on coinbase pro
+    enabled: true
+    depth: 100
+  okx:
+    symbol: "BTC/USDT"
+    enabled: true
+    depth: 100
+
+# ------------------------------------------------------------
+# Wall detection — the core filter
+# ------------------------------------------------------------
+# A "wall" is a single price level whose USD notional value
+# (price × qty) exceeds the configured threshold. Only walls above
+# this threshold are reported; smaller orders are treated as noise.
+#
+# Default: $1,000,000 (1M USD). At BTC ~$60k, that's ~16.7 BTC
+# parked at a single price level — clearly visible intent, not
+# retail noise.
+wall_threshold_usd: 1_000_000
+
+# Bands around spot for imbalance calculation. Only orders within
+# ±band_pct of spot are counted towards bid/ask imbalance (this
+# filters out distant walls that don't affect near-term price action
+# but still appear in the depth snapshot).
+imbalance_band_pct: 2.0
+
+# ------------------------------------------------------------
+# Conviction multiplier bounds
+# ------------------------------------------------------------
+# Final multiplier is bounded to [penalty_floor, boost_ceiling].
+# Direction is determined by wave-projected bias (bullish/bearish).
+# - Bid wall inside confluence zone + bullish wave → boost
+# - Ask wall inside confluence zone + bullish wave → penalty
+# - Bid wall inside confluence zone + bearish wave → penalty
+# - Ask wall inside confluence zone + bearish wave → boost
+#
+# Magnitude scales linearly with cross-exchange agreement + weighted
+# imbalance. Bounds intentionally match the calendar risk bounds
+# (0.60 to 1.10) so neither layer dominates the other.
+multiplier:
+  boost_ceiling: 1.10         # max boost when OB strongly supports wave
+  neutral: 1.00               # no order-book signal
+  penalty_floor: 0.50         # max penalty when OB strongly contradicts
+  min_agreement_fraction: 0.5 # below this, multiplier is forced to 1.0 (no signal)
+
+# ------------------------------------------------------------
+# Cross-exchange agreement — spoofing defence
+# ------------------------------------------------------------
+# A wall on a single exchange may be spoofed. Require at least N
+# exchanges to show the same-direction wall (both bid or both ask)
+# above wall_threshold_usd for the conviction signal to count.
+min_exchanges_for_signal: 2
+
+# ------------------------------------------------------------
+# Alerting — standalone notifier
+# ------------------------------------------------------------
+# When a new wall >= wall_threshold_usd appears (and was not present
+# in the previous snapshot within ±0.5% of the same price), send a
+# standalone Telegram alert. Alerts are deduplicated via the
+# orderbook_alerts SQLite table.
+alerts:
+  enabled: true
+  # Suppress repeat alerts for the same wall signature for this many minutes
+  dedup_window_minutes: 30
+  # Also send a summary alert every N snapshots even if no new walls
+  summary_interval_minutes: 60
+
+# ------------------------------------------------------------
+# Snapshot storage
+# ------------------------------------------------------------
+storage:
+  snapshot_dir: "data/orderbook"
+  # Delete snapshots older than this many days (0 = keep forever)
+  cleanup_days: 7
+
+# ------------------------------------------------------------
+# Network / retry
+# ------------------------------------------------------------
+network:
+  timeout_seconds: 15
+  retry_attempts: 3
+  retry_min_wait_seconds: 2
+  retry_max_wait_seconds: 10
+  # If all 3 exchanges fail, return neutral multiplier (1.0)
+  # rather than crashing the calling pipeline.
+  fail_safe_neutral: true

@@ -19,20 +19,20 @@ DEFAULT_SCHEMA = {
     "technical": {
         "description": "Price-based technical indicators",
         "features": [
-            {"name": "rsi_14", "type": "float", "normalize": True},
-            {"name": "macd", "type": "float", "normalize": True},
-            {"name": "macd_signal", "type": "float", "normalize": True},
-            {"name": "macd_hist", "type": "float", "normalize": True},
-            {"name": "atr_14", "type": "float", "normalize": True},
-            {"name": "atr_20", "type": "float", "normalize": True},
-            {"name": "ema_20", "type": "float", "normalize": False},
-            {"name": "ema_50", "type": "float", "normalize": False},
-            {"name": "ema_200", "type": "float", "normalize": False},
-            {"name": "bb_upper", "type": "float", "normalize": False},
-            {"name": "bb_lower", "type": "float", "normalize": False},
-            {"name": "bb_width", "type": "float", "normalize": True},
-            {"name": "obv", "type": "float", "normalize": True},
-            {"name": "adx_14", "type": "float", "normalize": True},
+            {"name": "rsi_14", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "macd", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "macd_signal", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "macd_hist", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "atr_14", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "atr_20", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "ema_20", "type": "float", "normalize": False, "scaler": "robust"},
+            {"name": "ema_50", "type": "float", "normalize": False, "scaler": "robust"},
+            {"name": "ema_200", "type": "float", "normalize": False, "scaler": "robust"},
+            {"name": "bb_upper", "type": "float", "normalize": False, "scaler": "robust"},
+            {"name": "bb_lower", "type": "float", "normalize": False, "scaler": "robust"},
+            {"name": "bb_width", "type": "float", "normalize": True, "scaler": "standard"},
+            {"name": "obv", "type": "float", "normalize": True, "scaler": "robust"},
+            {"name": "adx_14", "type": "float", "normalize": True, "scaler": "standard"},
         ],
     },
     "wave": {
@@ -101,9 +101,9 @@ class FeatureSchema:
     Loads from YAML or uses defaults.
     """
     
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Optional[Path] = None, schema: Optional[Dict[str, Any]] = None):
         self.config_path = config_path
-        self.schema = self._load_schema()
+        self.schema = schema if schema is not None else self._load_schema()
         self._build_lookups()
     
     def _load_schema(self) -> Dict[str, Any]:
@@ -118,6 +118,7 @@ class FeatureSchema:
         self.feature_to_group: Dict[str, str] = {}
         self.categorical_features: Dict[str, List[str]] = {}
         self.numerical_features: List[str] = []
+        self.scaler_for: Dict[str, str] = {}  # feature -> robust|standard|none
         
         for group_name, group_data in self.schema.items():
             for feat in group_data.get("features", []):
@@ -129,6 +130,31 @@ class FeatureSchema:
                     self.categorical_features[name] = feat.get("values", [])
                 else:
                     self.numerical_features.append(name)
+
+                # Explicit `scaler` wins; else derive from `normalize` flag
+                # (normalize: true → standard, false/absent → none)
+                self.scaler_for[name] = feat.get("scaler") or (
+                    "standard" if feat.get("normalize") else "none"
+                )
+
+    def scalers_for(self, features: List[str], default: str = "standard") -> Dict[str, Any]:
+        """Build per-feature scaler dict for TimeSeriesDataSet.
+
+        Schema entry ``scaler: robust|standard|none`` picks the scaler class;
+        features absent from the schema fall back to ``default``. Features with
+        ``none`` are omitted (unscaled). Caller skips target/time_idx as needed.
+        """
+        from sklearn.preprocessing import RobustScaler, StandardScaler
+
+        scalers: Dict[str, Any] = {}
+        for feat in features:
+            kind = self.scaler_for.get(feat, default)
+            if kind == "robust":
+                scalers[feat] = RobustScaler()
+            elif kind == "standard":
+                scalers[feat] = StandardScaler()
+            # "none" → omit (no scaling)
+        return scalers
     
     def get_features_for_group(self, group: str) -> List[str]:
         """Get feature names for a specific group."""
