@@ -232,19 +232,10 @@ def _build_inference_dataset(
     for feat in time_varying_known_categoricals + ["symbol"]:
         categorical_encoders[feat] = NaNLabelEncoder(add_nan=True)
 
-    # Per-feature scalers — must match train.py's scaling for inference consistency
-    from sklearn.preprocessing import RobustScaler, StandardScaler
-    heavy_tailed = {"obv", "volume", "ema_20", "ema_50", "ema_200",
-                    "bb_upper", "bb_lower", "close", "open", "high", "low"}
-    scalers = {}
-    all_reals = ["time_idx"] + time_varying_unknown_reals
-    for feat in all_reals:
-        if feat == "target_pct":
-            continue
-        if feat in heavy_tailed:
-            scalers[feat] = RobustScaler()
-        else:
-            scalers[feat] = StandardScaler()
+    # Per-feature scalers from schema — must match train.py for inference consistency
+    scalers = schema.scalers_for(
+        [f for f in ["time_idx"] + time_varying_unknown_reals if f != "target_pct"]
+    )
 
     dataset = TimeSeriesDataSet(
         df,

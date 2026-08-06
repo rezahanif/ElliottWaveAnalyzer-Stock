@@ -78,19 +78,10 @@ def backtest_predictions(
         if feat in test_df.columns:
             time_varying_known_categoricals.append(feat)
 
-    # Per-feature scalers — must match train.py for consistent inference
-    from sklearn.preprocessing import RobustScaler, StandardScaler
-    heavy_tailed = {"obv", "volume", "ema_20", "ema_50", "ema_200",
-                    "bb_upper", "bb_lower", "close", "open", "high", "low"}
-    scalers = {}
-    all_reals = ["time_idx"] + time_varying_unknown_reals
-    for feat in all_reals:
-        if feat == "target_pct":
-            continue
-        if feat in heavy_tailed:
-            scalers[feat] = RobustScaler()
-        else:
-            scalers[feat] = StandardScaler()
+    # Per-feature scalers from schema — must match train.py for consistent inference
+    scalers = schema.scalers_for(
+        [f for f in ["time_idx"] + time_varying_unknown_reals if f != "target_pct"]
+    )
 
     # Build dataset with ALL data (train+test) so encoder can look back
     full_dataset = TimeSeriesDataSet(
