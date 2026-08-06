@@ -47,26 +47,32 @@ def ensure_predictions_table(conn: sqlite3.Connection) -> None:
         """
         CREATE TABLE IF NOT EXISTS predictions (
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset               TEXT,
+            timestamp           DATETIME DEFAULT CURRENT_TIMESTAMP,
             timeframe           TEXT,
-            generated_at        DATETIME,
-            current_price       REAL,
-            wave_position       TEXT,
-            wave_degree         TEXT,
-            invalidation_level  REAL,
+            direction           TEXT,
+            btc_close_at_signal REAL,
+            cluster_valid       INTEGER,
             cluster_upper       REAL,
             cluster_lower       REAL,
-            q10_7d              REAL,
-            q50_7d              REAL,
-            q90_7d              REAL,
-            q10_14d             REAL,
-            q50_14d             REAL,
-            q90_14d             REAL,
-            q10_30d             REAL,
-            q50_30d             REAL,
-            q90_30d             REAL,
-            q10_60d             REAL,
-            q50_60d             REAL,
-            q90_60d             REAL
+            cluster_strength    REAL,
+            cluster_strength_adj REAL,
+            target_a            REAL,
+            target_b            REAL,
+            scenario_a_price    REAL,
+            scenario_b_price    REAL,
+            invalidation_level  REAL,
+            c_top               REAL,
+            b_low               REAL,
+            q10_7d REAL, q50_7d REAL, q90_7d REAL,
+            q10_14d REAL, q50_14d REAL, q90_14d REAL,
+            q10_30d REAL, q50_30d REAL, q90_30d REAL,
+            q10_60d REAL, q50_60d REAL, q90_60d REAL,
+            calendar_risk_flag  TEXT,
+            macro_pivot_count   INTEGER,
+            micro_pivot_count   INTEGER,
+            actual_outcome      TEXT,
+            prediction_correct  INTEGER
         )
         """
     )
@@ -150,7 +156,12 @@ def create_registry_tables(conn: sqlite3.Connection) -> None:
 def seed_registry(conn: sqlite3.Connection) -> None:
     """Seed assets/asset_timeframes from what actually exists in the repo today."""
     btc_checkpoint = ROOT / "models" / "wave_model.pt"
-    bmri_checkpoint = ROOT / "src" / "models" / "checkpoints" / "BMRI_JK.ckpt"
+    bmri_ckpts = sorted(
+        ROOT.glob("src/models/checkpoints/BMRI_JK-v*.ckpt"),
+        key=lambda p: int(p.stem.rsplit("-v", 1)[1]),
+        reverse=True,
+    )
+    bmri_checkpoint = bmri_ckpts[0] if bmri_ckpts else None
 
     assets = [
         {
@@ -168,7 +179,7 @@ def seed_registry(conn: sqlite3.Connection) -> None:
             "class": "stock",
             "currency": "IDR",
             "status": "active",
-            "checkpoint_path": "src/models/checkpoints/BMRI_JK.ckpt" if bmri_checkpoint.exists() else None,
+            "checkpoint_path": str(bmri_checkpoint.relative_to(ROOT)) if bmri_checkpoint else None,
             "timeframes": ["1D"],  # src/stock/train.py: 5/10/20-day horizons off daily bars
         },
     ]

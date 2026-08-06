@@ -36,7 +36,7 @@ export default defineEventHandler((event) => {
 
       const poll = () => {
         const newPredictions = db
-          .prepare(`SELECT id, asset, timeframe, generated_at FROM predictions WHERE id > ? ORDER BY id`)
+          .prepare(`SELECT id, asset, timeframe, timestamp AS generated_at FROM predictions WHERE id > ? ORDER BY id`)
           .all(lastPredictionId) as any[];
 
         for (const p of newPredictions) {

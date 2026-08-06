@@ -975,6 +975,7 @@ def run_pipeline(
 
     # Step 9: SQLite write
     record = {
+        "asset":                 "BTC",
         "timeframe":             timeframe,
         "direction":             fib_result['direction'] if fib_result else "neutral",
         "btc_close_at_signal":   current_price,
