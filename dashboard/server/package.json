@@ -1,0 +1,14 @@
+{
+  "name": "elliott-dashboard-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nitropack dev",
+    "build": "nitropack build",
+    "preview": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "nitropack": "^2.9.7"
+  }
+}

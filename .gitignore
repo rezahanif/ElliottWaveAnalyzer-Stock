@@ -115,3 +115,10 @@ Thumbs.db
 
 # Data files
 /data/
+
+# dashboard (Nitro + Vue)
+dashboard/server/node_modules/
+dashboard/server/.output/
+dashboard/server/.nitro/
+dashboard/web/node_modules/
+dashboard/web/dist/
