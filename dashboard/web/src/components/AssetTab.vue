@@ -90,7 +90,7 @@ const latest = computed(() => predictions.value[0]);
     <p v-else-if="!loading">No predictions yet for {{ asset.symbol }} / {{ timeframe }}.</p>
 
     <div class="chart-row">
-      <PredictionChart v-if="predictions.length" :predictions="predictions" />
+      <PredictionChart v-if="predictions.length" :asset="asset.symbol" :timeframe="timeframe" :predictions="predictions" />
       <SignalTensionPanel :asset="asset.symbol" :timeframe="timeframe" />
     </div>
 

@@ -121,4 +121,6 @@ dashboard/server/node_modules/
 dashboard/server/.output/
 dashboard/server/.nitro/
 dashboard/web/node_modules/
+dashboard/.verify.sh
+dashboard/.verify.log
 dashboard/web/dist/

@@ -54,6 +54,7 @@ PREDICTIONS_COLUMNS: list[tuple[str, str]] = [
     ("timestamp", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
     ("timeframe", "TEXT"),
     ("direction", "TEXT"),
+    ("wave_degree", "TEXT"),
     ("btc_close_at_signal", "REAL"),
     ("cluster_valid", "INTEGER"),
     ("cluster_upper", "REAL"),
@@ -108,6 +109,28 @@ def ensure_predictions_index(conn: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_predictions_asset_tf "
         "ON predictions(asset, timeframe)"
     )
+
+
+# Wave degree assigned by src/btc/pivots/zigzag.py::ZigZagDetector for the
+# macro layer (TIMEFRAME_DEFAULTS) — used to backfill rows written before the
+# wave_degree column existed. The writer stores the live degree going forward.
+TIMEFRAME_MACRO_DEGREE = {
+    "1W": "primary",
+    "1D": "intermediate",
+    "4H": "minute",
+}
+
+
+def backfill_wave_degree(conn: sqlite3.Connection) -> None:
+    """Fill NULL wave_degree from the timeframe mapping (idempotent)."""
+    for tf, degree in TIMEFRAME_MACRO_DEGREE.items():
+        cur = conn.execute(
+            "UPDATE predictions SET wave_degree = ? "
+            "WHERE wave_degree IS NULL AND timeframe = ?",
+            (degree, tf),
+        )
+        if cur.rowcount:
+            print(f"  [migrate] Backfilled wave_degree='{degree}' for {cur.rowcount} {tf} rows.")
 
 
 def add_asset_column(conn: sqlite3.Connection) -> None:
@@ -267,6 +290,7 @@ def migrate(db_path: Path) -> None:
         ensure_predictions_table(conn)
         add_asset_column(conn)
         ensure_predictions_columns(conn)
+        backfill_wave_degree(conn)
         create_registry_tables(conn)
         seed_registry(conn)
         conn.commit()

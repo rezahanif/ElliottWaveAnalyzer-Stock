@@ -97,6 +97,32 @@ def test_legacy_backfill_asset_btc(tmp_path):
         conn.close()
 
 
+def test_legacy_wave_degree_backfilled_by_timeframe(tmp_path):
+    db = tmp_path / "legacy_degree.db"
+    conn = sqlite3.connect(db)
+    conn.execute("""CREATE TABLE predictions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        timeframe TEXT, direction TEXT, btc_close_at_signal REAL)""")
+    conn.execute("INSERT INTO predictions (timeframe, direction) VALUES ('1D', 'long')")
+    conn.execute("INSERT INTO predictions (timeframe, direction) VALUES ('4H', 'long')")
+    conn.execute("INSERT INTO predictions (timeframe, direction) VALUES ('1W', 'long')")
+    conn.commit()
+    conn.close()
+
+    mig.migrate(db)
+
+    conn = sqlite3.connect(db)
+    try:
+        cols = {c[1] for c in conn.execute("PRAGMA table_info(predictions)")}
+        assert "wave_degree" in cols
+        by_tf = dict(conn.execute(
+            "SELECT timeframe, wave_degree FROM predictions ORDER BY id").fetchall())
+        assert by_tf == {"1D": "intermediate", "4H": "minute", "1W": "primary"}
+    finally:
+        conn.close()
+
+
 def test_double_migration_is_idempotent(tmp_path):
     db = tmp_path / "twice.db"
     mig.migrate(db)

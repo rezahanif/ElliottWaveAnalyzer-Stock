@@ -107,12 +107,40 @@ export interface StreamEvents {
   onJob?: (j: { id: number; asset_id: number; timeframe: string; status: string }) => void;
 }
 
+export interface Candle {
+  time: number; // unix seconds
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface Pivot {
+  timestamp_ms: number;
+  price: number;
+  swing_type: "High" | "Low";
+  layer: "macro" | "micro";
+  degree?: string;
+  structure_label?: string;
+  [key: string]: unknown;
+}
+
 export const api = {
   getAssets: () => j<{ assets: Asset[] }>("/assets"),
 
   getPredictions: (asset: string, timeframe: string, limit = 200) =>
     j<{ predictions: Prediction[] }>(
       `/predictions?asset=${encodeURIComponent(asset)}&timeframe=${encodeURIComponent(timeframe)}&limit=${limit}`
+    ),
+
+  getCandles: (asset: string, timeframe: string, limit = 500) =>
+    j<{ candles: Candle[] }>(
+      `/candles?asset=${encodeURIComponent(asset)}&timeframe=${encodeURIComponent(timeframe)}&limit=${limit}`
+    ),
+
+  getPivots: (asset: string, timeframe: string, layer: "all" | "macro" | "micro" = "all") =>
+    j<{ pivots: Pivot[] }>(
+      `/pivots?asset=${encodeURIComponent(asset)}&timeframe=${encodeURIComponent(timeframe)}&layer=${layer}`
     ),
 
   triggerJob: (assetId: number, timeframe: string) =>

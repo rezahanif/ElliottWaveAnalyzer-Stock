@@ -78,7 +78,7 @@ if env_path.exists():
 
 
 from src.btc.pivots.zigzag import ZigZagDetector
-from src.btc.pivots.pivot_schema import SwingType
+from src.btc.pivots.pivot_schema import SwingType, sanitize_pivot_dict
 from src.btc.fib_engine.fibonacci import FibonacciEngine
 
 # Order-book conviction layer — phase 3 integration.
@@ -375,6 +375,30 @@ def detect_latest_pivots(df: pd.DataFrame, timeframe: str):
     result   = detector.run(df, asset="BTCUSD")
     print(f"  [zigzag] {timeframe}: {len(result.macro)} macro | {len(result.micro)} micro pivots")
     return result.macro, result.micro
+
+
+def dump_pivots(timeframe: str, macro_pivots, micro_pivots) -> str:
+    """
+    Persist the confirmed pivots to data/pivots/{asset}_{timeframe}_pivots.json
+    so the dashboard /api/pivots route can serve them without re-running
+    ZigZag. Shape mirrors PivotPoint.to_dict() (see src/btc/pivots/pivot_schema.py).
+
+    NaN values (rsi_at_pivot, fib_context, ...) are sanitized to None via
+    pivot_schema.sanitize_pivot_dict — Node's JSON.parse rejects bare NaN
+    literals, so raw to_dict() output would 500 the Nitro route.
+    """
+    os.makedirs(LAYERS_DIR, exist_ok=True)
+    path = os.path.join(LAYERS_DIR, f"BTC_{timeframe}_pivots.json")
+    out = {
+        "asset":     "BTCUSD",
+        "timeframe": timeframe,
+        "macro":     [sanitize_pivot_dict(p.to_dict()) for p in macro_pivots],
+        "micro":     [sanitize_pivot_dict(p.to_dict()) for p in micro_pivots],
+    }
+    with open(path, "w") as f:
+        json.dump(out, f)
+    print(f"  [zigzag] Persisted {len(macro_pivots)} macro + {len(micro_pivots)} micro pivots → {path}")
+    return path
 
 
 # ─────────────────────────────────────────────────────────────
@@ -932,6 +956,7 @@ def run_pipeline(
 
     # Step 4: Pivot detection
     macro_pivots, micro_pivots = detect_latest_pivots(df_layers, timeframe)
+    dump_pivots(timeframe, macro_pivots, micro_pivots)
 
     # Step 5: Inference window
     window_df = prep_inference_window(df_layers, macro_pivots, timeframe)
@@ -970,6 +995,7 @@ def run_pipeline(
         "asset":                 "BTC",
         "timeframe":             timeframe,
         "direction":             fib_result['direction'] if fib_result else "neutral",
+        "wave_degree":           (macro_pivots[-1].degree.value if macro_pivots else None),
         "btc_close_at_signal":   current_price,
         "cluster_valid":         int(fib_result['cluster_valid']) if fib_result else 0,
         "cluster_upper":         fib_result['cluster_upper']    if fib_result else None,
