@@ -88,7 +88,7 @@ from src.btc.fib_engine.fibonacci import FibonacciEngine
 try:
     from src.btc.orderbook.fetcher import fetch_multi_exchange_orderbook
     from src.btc.orderbook.scorer import OrderBookConvictionScorer, ConvictionReport, score_from_snapshot_dict
-    from src.btc.orderbook.snapshot import load_latest_snapshot
+    from src.btc.orderbook.snapshot import load_latest_snapshot, write_snapshot
     ORDERBOOK_LAYER_AVAILABLE = True
 except ImportError as _e:
     ORDERBOOK_LAYER_AVAILABLE = False
@@ -693,6 +693,27 @@ def apply_orderbook_conviction(
                 confluence_zone=confluence_zone,
             )
             source = "live"
+            # Per-exchange health line — so host-side reachability of each
+            # venue is visible in logs (previously only the aggregate verdict).
+            print(f"  [orderbook] exchanges: {report.exchanges_succeeded} ok / {report.exchanges_failed} failed"
+                  + (f" — {', '.join(report.failed_exchanges)}" if report.failed_exchanges else ""))
+            for sig in report.per_exchange:
+                if sig.fetch_error:
+                    print(f"  [orderbook]   {sig.exchange}: FAILED — {sig.fetch_error}")
+                else:
+                    print(f"  [orderbook]   {sig.exchange}: spot=${sig.spot_price:,.0f} "
+                          f"walls={len(sig.bid_walls) + len(sig.ask_walls)} "
+                          f"(bid ${sum(w.usd_value for w in sig.bid_walls):,.0f} / "
+                          f"ask ${sum(w.usd_value for w in sig.ask_walls):,.0f})")
+            # Persist raw snapshot so future runs hit the cached fast-path and
+            # data/orderbook/ accumulates for the calibration backtest.
+            try:
+                write_snapshot({
+                    "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                    "exchanges": {name: snap.to_dict() for name, snap in snaps.items()},
+                })
+            except Exception as e:
+                print(f"  [orderbook] Failed to write snapshot: {e}")
         except Exception as e:
             print(f"  [orderbook] Live fetch failed: {e}")
             neutral_record = {
@@ -722,7 +743,15 @@ def apply_orderbook_conviction(
         "ob_dominant_exchange":   dominant_exchange,
         "ob_flag":                report.flag_string,
     }
-    flag_out = report.flag_string + (f" (source: {source})" if source else "")
+    # Append bid/ask wall breakdown so the alert always shows what the
+    # order book actually held, even when the verdict is neutral.
+    wall_breakdown = ""
+    if report.bid_walls or report.ask_walls:
+        bid_total = sum(w.usd_value for w in report.bid_walls)
+        ask_total = sum(w.usd_value for w in report.ask_walls)
+        wall_breakdown = (f" | bid walls {len(report.bid_walls)} ${bid_total:,.0f} / "
+                          f"ask walls {len(report.ask_walls)} ${ask_total:,.0f}")
+    flag_out = report.flag_string + wall_breakdown + (f" (source: {source})" if source else "")
     print(f"  [orderbook] {flag_out}")
     return final_strength, flag_out, ob_record
 

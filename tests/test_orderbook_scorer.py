@@ -82,14 +82,14 @@ def scorer() -> OrderBookConvictionScorer:
 # ─────────────────────────────────────────────────────────────
 
 class TestWallThreshold:
-    """Verify the $1M wall threshold filter."""
+    """Verify the $100K wall threshold filter (config/orderbook.yaml)."""
 
-    def test_walls_below_1m_are_ignored(self, scorer):
-        """3 exchanges all with $900k bid walls — should be neutral (below $1M threshold)."""
+    def test_walls_below_threshold_are_ignored(self, scorer):
+        """3 exchanges all with $90k bid walls — should be neutral (below $100K threshold)."""
         snaps = {
-            "binance":  make_snap("binance",  bid_walls_usd=[900_000]),
-            "coinbase": make_snap("coinbase", bid_walls_usd=[900_000]),
-            "okx":      make_snap("okx",      bid_walls_usd=[900_000]),
+            "binance":  make_snap("binance",  bid_walls_usd=[90_000]),
+            "coinbase": make_snap("coinbase", bid_walls_usd=[90_000]),
+            "okx":      make_snap("okx",      bid_walls_usd=[90_000]),
         }
         r = scorer.compute(snaps, wave_direction="bullish")
         assert r.multiplier == 1.0
@@ -98,12 +98,12 @@ class TestWallThreshold:
         assert "no walls" in r.neutral_reason.lower()
         assert len(r.bid_walls) == 0
 
-    def test_walls_at_exactly_1m_count(self, scorer):
-        """A wall at exactly $1,000,000 should count (>= threshold)."""
+    def test_walls_at_exactly_threshold_count(self, scorer):
+        """A wall at exactly $100,000 should count (>= threshold)."""
         snaps = {
-            "binance":  make_snap("binance",  bid_walls_usd=[1_000_000]),
-            "coinbase": make_snap("coinbase", bid_walls_usd=[1_000_000]),
-            "okx":      make_snap("okx",      bid_walls_usd=[1_000_000]),
+            "binance":  make_snap("binance",  bid_walls_usd=[100_000]),
+            "coinbase": make_snap("coinbase", bid_walls_usd=[100_000]),
+            "okx":      make_snap("okx",      bid_walls_usd=[100_000]),
         }
         r = scorer.compute(snaps, wave_direction="bullish")
         assert len(r.bid_walls) == 3

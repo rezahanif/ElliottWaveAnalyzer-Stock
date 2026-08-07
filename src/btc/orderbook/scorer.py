@@ -9,7 +9,7 @@ applied to the calendar-adjusted confluence strength in the main BTC pipeline.
 
 Design (per config/orderbook.yaml):
     1. Filter for WALLS — single price levels with USD notional value
-       >= wall_threshold_usd (default $1,000,000). Both bid walls (buy
+       >= wall_threshold_usd (default $100,000). Both bid walls (buy
        side) and ask walls (sell side) count.
     2. Per-exchange imbalance — (sum_bid_usd - sum_ask_usd) within ±2%
        of spot. Range: [-1, +1].
@@ -413,7 +413,7 @@ class OrderBookConvictionScorer:
             top = ask_walls[0]
             wall_desc = f"top ask ${top.usd_value/1e6:.2f}M @ ${top.price:,.0f}"
         else:
-            wall_desc = "no walls >= $1M"
+            wall_desc = f"no walls >= ${self.wall_threshold_usd:,.0f}"
 
         # Note walls inside confluence zone
         zone_note = ""
