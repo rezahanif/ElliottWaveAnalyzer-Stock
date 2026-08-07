@@ -41,40 +41,72 @@ def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
     return row is not None
 
 
+# ─────────────────────────────────────────────────────────────
+# Predictions schema — SINGLE SOURCE OF TRUTH.
+# scripts/btc/run_daily_analysis.py::init_db() calls the ensure_* helpers
+# below instead of owning its own CREATE TABLE, so the writer and the
+# dashboard can never drift apart again (Gap 2 fix).
+# ─────────────────────────────────────────────────────────────
+
+PREDICTIONS_COLUMNS: list[tuple[str, str]] = [
+    ("id", "INTEGER PRIMARY KEY AUTOINCREMENT"),
+    ("asset", "TEXT"),
+    ("timestamp", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
+    ("timeframe", "TEXT"),
+    ("direction", "TEXT"),
+    ("btc_close_at_signal", "REAL"),
+    ("cluster_valid", "INTEGER"),
+    ("cluster_upper", "REAL"),
+    ("cluster_lower", "REAL"),
+    ("cluster_strength", "REAL"),
+    ("cluster_strength_adj", "REAL"),
+    ("target_a", "REAL"),
+    ("target_b", "REAL"),
+    ("scenario_a_price", "REAL"),
+    ("scenario_b_price", "REAL"),
+    ("invalidation_level", "REAL"),
+    ("c_top", "REAL"),
+    ("b_low", "REAL"),
+    ("q10_7d", "REAL"), ("q50_7d", "REAL"), ("q90_7d", "REAL"),
+    ("q10_14d", "REAL"), ("q50_14d", "REAL"), ("q90_14d", "REAL"),
+    ("q10_30d", "REAL"), ("q50_30d", "REAL"), ("q90_30d", "REAL"),
+    ("q10_60d", "REAL"), ("q50_60d", "REAL"), ("q90_60d", "REAL"),
+    ("calendar_risk_flag", "TEXT"),
+    ("macro_pivot_count", "INTEGER"),
+    ("micro_pivot_count", "INTEGER"),
+    ("actual_outcome", "TEXT"),
+    ("prediction_correct", "INTEGER"),
+    # Order-book conviction columns (written by run_daily_analysis.py).
+    ("ob_conviction", "REAL"),          # multiplier applied (0.5 - 1.10)
+    ("ob_bid_ask_imbalance", "REAL"),   # weighted avg imbalance [-1, +1]
+    ("ob_dominant_exchange", "TEXT"),   # exchange with largest wall
+    ("ob_flag", "TEXT"),                # human-readable summary
+]
+
+
 def ensure_predictions_table(conn: sqlite3.Connection) -> None:
-    """Create predictions table matching run_daily_analysis.py's schema if absent."""
+    """Create predictions with the full shared schema if absent."""
+    cols = ",\n            ".join(f"{n} {t}" for n, t in PREDICTIONS_COLUMNS)
     conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS predictions (
-            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-            asset               TEXT,
-            timestamp           DATETIME DEFAULT CURRENT_TIMESTAMP,
-            timeframe           TEXT,
-            direction           TEXT,
-            btc_close_at_signal REAL,
-            cluster_valid       INTEGER,
-            cluster_upper       REAL,
-            cluster_lower       REAL,
-            cluster_strength    REAL,
-            cluster_strength_adj REAL,
-            target_a            REAL,
-            target_b            REAL,
-            scenario_a_price    REAL,
-            scenario_b_price    REAL,
-            invalidation_level  REAL,
-            c_top               REAL,
-            b_low               REAL,
-            q10_7d REAL, q50_7d REAL, q90_7d REAL,
-            q10_14d REAL, q50_14d REAL, q90_14d REAL,
-            q10_30d REAL, q50_30d REAL, q90_30d REAL,
-            q10_60d REAL, q50_60d REAL, q90_60d REAL,
-            calendar_risk_flag  TEXT,
-            macro_pivot_count   INTEGER,
-            micro_pivot_count   INTEGER,
-            actual_outcome      TEXT,
-            prediction_correct  INTEGER
-        )
-        """
+        f"CREATE TABLE IF NOT EXISTS predictions (\n            {cols}\n        )"
+    )
+
+
+def ensure_predictions_columns(conn: sqlite3.Connection) -> None:
+    """Add any schema columns missing from a legacy predictions table."""
+    existing = {c[1] for c in conn.execute("PRAGMA table_info(predictions)").fetchall()}
+    for name, typ in PREDICTIONS_COLUMNS:
+        if name == "id" or name in existing:
+            continue
+        conn.execute(f"ALTER TABLE predictions ADD COLUMN {name} {typ}")
+        print(f"  [migrate] Added '{name}' column to predictions.")
+
+
+def ensure_predictions_index(conn: sqlite3.Connection) -> None:
+    """Index used by the dashboard's asset+timeframe lookups."""
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_predictions_asset_tf "
+        "ON predictions(asset, timeframe)"
     )
 
 
@@ -83,12 +115,11 @@ def add_asset_column(conn: sqlite3.Connection) -> None:
         print("  [migrate] Adding `asset` column to predictions...")
         conn.execute("ALTER TABLE predictions ADD COLUMN asset TEXT")
         conn.execute("UPDATE predictions SET asset = 'BTC' WHERE asset IS NULL")
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_predictions_asset_tf "
-            "ON predictions(asset, timeframe)"
-        )
     else:
         print("  [migrate] `asset` column already present, skipping.")
+    # Run unconditionally — fresh bootstraps bake `asset` into CREATE TABLE and
+    # would otherwise short-circuit past index creation (Gap 1).
+    ensure_predictions_index(conn)
 
 
 def create_registry_tables(conn: sqlite3.Connection) -> None:
@@ -174,7 +205,7 @@ def seed_registry(conn: sqlite3.Connection) -> None:
             "class": "stock",
             "currency": "IDR",
             "status": "active",
-            "checkpoint_path": str(bmri_checkpoint.relative_to(ROOT)) if bmri_checkpoint else None,
+            "checkpoint_path": str(bmri_checkpoint.relative_to(ROOT)) if bmri_checkpoint.exists() else None,
             "timeframes": ["1D"],  # src/stock/train.py: 5/10/20-day horizons off daily bars
         },
     ]
@@ -198,16 +229,17 @@ def seed_registry(conn: sqlite3.Connection) -> None:
 
         for tf in a["timeframes"]:
             script_path, job_action = _script_for(a["symbol"], tf)
+            trained = 1 if a["checkpoint_path"] else 0
             conn.execute(
                 """
                 INSERT INTO asset_timeframes (asset_id, timeframe, trained, script_path, job_action)
-                VALUES (?, ?, 1, ?, ?)
+                VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(asset_id, timeframe) DO UPDATE SET
                     trained=excluded.trained,
                     script_path=excluded.script_path,
                     job_action=excluded.job_action
                 """,
-                (asset_id, tf, script_path, job_action),
+                (asset_id, tf, trained, script_path, job_action),
             )
 
 
@@ -234,6 +266,7 @@ def migrate(db_path: Path) -> None:
         conn.execute("PRAGMA foreign_keys = ON")
         ensure_predictions_table(conn)
         add_asset_column(conn)
+        ensure_predictions_columns(conn)
         create_registry_tables(conn)
         seed_registry(conn)
         conn.commit()

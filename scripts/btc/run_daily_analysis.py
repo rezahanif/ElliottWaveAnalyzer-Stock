@@ -45,6 +45,18 @@ import sys
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Predictions schema lives in scripts/migrate_dashboard_schema.py (single
+# source of truth — see its PREDICTIONS_COLUMNS). Importing here means this
+# pipeline can never drift from what the dashboard API expects.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from scripts.migrate_dashboard_schema import (
+    ensure_predictions_columns,
+    ensure_predictions_index,
+    ensure_predictions_table,
+)
 from typing import Dict, Optional, Tuple
 
 import numpy as np
@@ -720,66 +732,17 @@ def apply_orderbook_conviction(
 # ─────────────────────────────────────────────────────────────
 
 def init_db(db_path: str):
-    """Create predictions table if not exists and run migrations if needed."""
+    """Create predictions table if not exists and run migrations if needed.
+
+    Schema is owned by scripts/migrate_dashboard_schema.py — this module only
+    calls the shared ensure_* helpers, never defines its own CREATE TABLE
+    (that duplication was the drift bug that let ob_*/asset columns diverge).
+    """
     os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else '.', exist_ok=True)
     conn = sqlite3.connect(db_path)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
-            id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp             DATETIME DEFAULT CURRENT_TIMESTAMP,
-            timeframe             TEXT,
-            direction             TEXT,
-            btc_close_at_signal   REAL,
-            cluster_valid         INTEGER,
-            cluster_upper         REAL,
-            cluster_lower         REAL,
-            cluster_strength      REAL,
-            cluster_strength_adj  REAL,
-            target_a              REAL,
-            target_b              REAL,
-            scenario_a_price      REAL,
-            scenario_b_price      REAL,
-            invalidation_level    REAL,
-            c_top                 REAL,
-            b_low                 REAL,
-            q10_7d REAL, q50_7d REAL, q90_7d REAL,
-            q10_14d REAL, q50_14d REAL, q90_14d REAL,
-            q10_30d REAL, q50_30d REAL, q90_30d REAL,
-            q10_60d REAL, q50_60d REAL, q90_60d REAL,
-            calendar_risk_flag    TEXT,
-            macro_pivot_count     INTEGER,
-            micro_pivot_count     INTEGER,
-            actual_outcome        TEXT,
-            prediction_correct    INTEGER
-        )
-    """)
-
-    # Run migration to add direction if it's missing in existing database
-    cursor = conn.execute("PRAGMA table_info(predictions)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "direction" not in columns:
-        try:
-            conn.execute("ALTER TABLE predictions ADD COLUMN direction TEXT")
-            print("  [db] Migration: Added 'direction' column to predictions table.")
-        except Exception as e:
-            print(f"  [db] Migration failed: {e}")
-
-    # Order-book conviction columns (Phase 3 integration). Additive — never
-    # breaks existing rows; defaults to NULL/1.0.
-    ob_columns = [
-        ("ob_conviction",         "REAL"),  # multiplier applied (0.5 - 1.10)
-        ("ob_bid_ask_imbalance",  "REAL"),  # weighted avg imbalance [-1, +1]
-        ("ob_dominant_exchange",  "TEXT"),  # exchange with largest wall
-        ("ob_flag",               "TEXT"),  # human-readable summary
-    ]
-    for col_name, col_type in ob_columns:
-        if col_name not in columns:
-            try:
-                conn.execute(f"ALTER TABLE predictions ADD COLUMN {col_name} {col_type}")
-                print(f"  [db] Migration: Added '{col_name}' column to predictions table.")
-            except Exception as e:
-                print(f"  [db] Migration failed for {col_name}: {e}")
-
+    ensure_predictions_table(conn)
+    ensure_predictions_columns(conn)
+    ensure_predictions_index(conn)
     conn.commit()
     conn.close()
 
