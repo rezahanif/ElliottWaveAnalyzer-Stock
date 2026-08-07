@@ -156,12 +156,7 @@ def create_registry_tables(conn: sqlite3.Connection) -> None:
 def seed_registry(conn: sqlite3.Connection) -> None:
     """Seed assets/asset_timeframes from what actually exists in the repo today."""
     btc_checkpoint = ROOT / "models" / "wave_model.pt"
-    bmri_ckpts = sorted(
-        ROOT.glob("src/models/checkpoints/BMRI_JK-v*.ckpt"),
-        key=lambda p: int(p.stem.rsplit("-v", 1)[1]),
-        reverse=True,
-    )
-    bmri_checkpoint = bmri_ckpts[0] if bmri_ckpts else None
+    bmri_checkpoint = ROOT / "src" / "models" / "checkpoints" / "BMRI_JK.ckpt"
 
     assets = [
         {
