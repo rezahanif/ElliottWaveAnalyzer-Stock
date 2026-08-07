@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { api, type Asset, type Prediction, type Job } from "../lib/api";
 import PredictionChart from "./PredictionChart.vue";
+import SignalTensionPanel from "./SignalTensionPanel.vue";
 
 const props = defineProps<{ asset: Asset }>();
 
@@ -88,7 +89,10 @@ const latest = computed(() => predictions.value[0]);
     </div>
     <p v-else-if="!loading">No predictions yet for {{ asset.symbol }} / {{ timeframe }}.</p>
 
-    <PredictionChart v-if="predictions.length" :predictions="predictions" />
+    <div class="chart-row">
+      <PredictionChart v-if="predictions.length" :predictions="predictions" />
+      <SignalTensionPanel :asset="asset.symbol" :timeframe="timeframe" />
+    </div>
 
     <details v-if="job" class="log">
       <summary>Job #{{ job.id }} — {{ job.status }}</summary>
@@ -100,6 +104,15 @@ const latest = computed(() => predictions.value[0]);
 <style scoped>
 .tab {
   padding: 1rem 0;
+}
+.chart-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.chart-row > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 .controls {
   display: flex;

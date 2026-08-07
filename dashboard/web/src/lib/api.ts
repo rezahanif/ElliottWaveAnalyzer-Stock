@@ -35,6 +35,51 @@ export interface Prediction {
   [key: string]: unknown;
 }
 
+/**
+ * Signal tension — live (unconfirmed) ZigZag state for one threshold layer.
+ *
+ * The pivot detector (src/btc/pivots/zigzag.py) only returns *confirmed*
+ * pivots today; this is the shape we want once it also exposes the running
+ * extreme + locked threshold for the in-progress swing (see
+ * ZigZagResult.macro_live / .micro_live in the dashboard architecture doc).
+ * Backend endpoint doesn't exist yet — getSignalTension() degrades to null
+ * per layer until /api/signal-tension ships.
+ */
+export type SwingState = "SEEKING_HIGH" | "SEEKING_LOW";
+export type SignalDirection = "long" | "short";
+
+export interface SignalTensionLayer {
+  layer: "macro" | "micro";
+  /** which extreme the state machine is currently tracking */
+  state: SwingState;
+  /** SEEKING_HIGH confirms a top (short signal); SEEKING_LOW confirms a bottom (long signal) */
+  direction: SignalDirection;
+  /** 0-100, how far price has moved from the running extreme toward the locked threshold */
+  priceProgressPct: number;
+  /** bars since the last confirmed pivot on this layer */
+  barsElapsed: number;
+  /** minimum bars required before a new pivot can confirm (timeframe-dependent) */
+  barsRequired: number;
+  barsReady: boolean;
+  /** exact price that would confirm the pivot right now, given the locked threshold */
+  triggerPrice: number;
+  lastPivot: {
+    structureLabel: string | null;
+    magnitudePct: number | null;
+    timestamp: string | null;
+  } | null;
+}
+
+export interface SignalTensionResponse {
+  macro: SignalTensionLayer | null;
+  micro: SignalTensionLayer | null;
+}
+
+/** Pure so it's testable independent of whatever shape the backend ends up sending. */
+export function directionFromState(state: SwingState): SignalDirection {
+  return state === "SEEKING_HIGH" ? "short" : "long";
+}
+
 export interface Job {
   id: number;
   asset_id: number;
@@ -78,6 +123,22 @@ export const api = {
     }),
 
   getJob: (id: number) => j<Job>(`/jobs/${id}`),
+
+  /**
+   * Not backed by a server route yet — returns { macro: null, micro: null }
+   * on 404 instead of throwing, so the panel can render an honest "not
+   * available yet" state rather than an error banner. Safe to call now;
+   * starts returning real data the moment /api/signal-tension ships.
+   */
+  async getSignalTension(asset: string, timeframe: string): Promise<SignalTensionResponse> {
+    try {
+      return await j<SignalTensionResponse>(
+        `/signal-tension?asset=${encodeURIComponent(asset)}&timeframe=${encodeURIComponent(timeframe)}`
+      );
+    } catch {
+      return { macro: null, micro: null };
+    }
+  },
 
   subscribe(opts: StreamEvents): () => void {
     const es = new EventSource(`${BASE}/stream`);
