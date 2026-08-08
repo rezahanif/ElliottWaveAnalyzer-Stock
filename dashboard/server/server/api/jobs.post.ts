@@ -11,11 +11,15 @@ export default defineEventHandler(async (event) => {
   if (typeof body?.assetId !== "number" || typeof body?.timeframe !== "string") {
     throw createError({ statusCode: 400, statusMessage: "assetId (number) and timeframe (string) are required" });
   }
+  const action = body.action ?? "run";
+  if (typeof action !== "string" || !["run"].includes(action)) {
+    throw createError({ statusCode: 400, statusMessage: "action must be run" });
+  }
 
   const { jobId } = triggerJob({
     assetId: body.assetId,
     timeframe: body.timeframe,
-    action: body.action || "run",
+    action,
   });
 
   return { jobId, status: "running" };

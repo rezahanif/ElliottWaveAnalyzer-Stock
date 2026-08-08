@@ -30,6 +30,29 @@ else
     exit 1
 fi
 
+# Register each scheduled timeframe in dashboard jobs table. A non-zero
+# registration means user-triggered or another cron job already owns it.
+JOB_IDS=()
+finish_jobs() {
+    STATUS=$?
+    RESULT=done
+    [ "$STATUS" -eq 0 ] || RESULT=failed
+    for ITEM in "${JOB_IDS[@]}"; do
+        TF="${ITEM%%:*}"; ID="${ITEM##*:}"
+        python scripts/cron_job_lifecycle.py --db data/predictions.db --asset BTC \
+            --timeframe "$TF" --finish "$RESULT" --job-id "$ID" || true
+    done
+    exit "$STATUS"
+}
+trap finish_jobs EXIT
+for TF in 1D 4H; do
+    JOB_ID=$(python scripts/cron_job_lifecycle.py --db data/predictions.db --asset BTC --timeframe "$TF") || {
+        echo "❌ Job collision: BTC/$TF already running" | tee -a data/automation.log
+        exit 2
+    }
+    JOB_IDS+=("$TF:$JOB_ID")
+done
+
 # Print run timestamp
 echo "======================================================================" | tee -a data/automation.log
 echo "🚀 Run Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a data/automation.log

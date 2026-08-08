@@ -35,6 +35,8 @@ const OHLCV_FILE = {
   ],
 };
 
+const STUB_JOB = `const [delay = '0', code = '0'] = process.argv.slice(2);\nsetTimeout(() => { console.log('stub job ran'); process.exit(Number(code)); }, Number(delay) * 1000);\n`;
+
 const PIVOTS_FILE = {
   asset: "BTCUSD",
   timeframe: "1D",
@@ -70,6 +72,8 @@ before(async () => {
   fixtureDir = mkdtempSync(join(tmpdir(), "nitro-test-"));
   mkdirSync(join(fixtureDir, "data", "ohlcv"), { recursive: true });
   mkdirSync(join(fixtureDir, "data", "pivots"), { recursive: true });
+  mkdirSync(join(fixtureDir, "scripts"), { recursive: true });
+  writeFileSync(join(fixtureDir, "scripts", "stub_job.mjs"), STUB_JOB);
 
   // Seed DB with the shared schema + one real-looking prediction row.
   const { default: Database } = await import("better-sqlite3");
@@ -105,9 +109,17 @@ before(async () => {
       trained INTEGER NOT NULL DEFAULT 0, script_path TEXT, job_action TEXT,
       UNIQUE(asset_id, timeframe)
     );
+    CREATE TABLE jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      asset_id INTEGER NOT NULL, timeframe TEXT NOT NULL,
+      action TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'queued',
+      log_tail TEXT, started_at DATETIME, finished_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
     INSERT INTO assets (id, symbol, display_name, class, currency, status)
       VALUES (1, 'BTC', 'Bitcoin', 'crypto', 'USD', 'active');
-    INSERT INTO asset_timeframes (asset_id, timeframe, trained) VALUES (1, '1D', 1);
+    INSERT INTO asset_timeframes (asset_id, timeframe, trained, script_path, job_action)
+      VALUES (1, '1D', 1, 'scripts/stub_job.mjs', '["0.2", "0"]');
     INSERT INTO predictions (asset, timeframe, direction, wave_degree, btc_close_at_signal,
       cluster_upper, cluster_lower, invalidation_level, q10_7d, q50_7d, q90_7d,
       macro_pivot_count, micro_pivot_count)
@@ -131,6 +143,8 @@ before(async () => {
       PORT: String(PORT),
       NITRO_DB_PATH: join(fixtureDir, "data", "predictions.db"),
       NITRO_REPO_ROOT: fixtureDir,
+      NITRO_PYTHON_BIN: process.execPath,
+      NITRO_JOB_TIMEOUT_MS: "5000",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -205,6 +219,49 @@ test("GET /api/pivots returns macro+micro separated by layer", async () => {
 test("GET /api/pivots rejects bad layer with 400", async () => {
   const res = await fetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=bogus`);
   assert.equal(res.status, 400);
+});
+
+test("POST /api/jobs runs allow-listed argv and reaches done", async () => {
+  const res = await fetch(`${BASE}/api/jobs`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ assetId: 1, timeframe: "1D" }),
+  });
+  assert.equal(res.status, 200);
+  const { jobId } = await res.json();
+  let job;
+  for (let i = 0; i < 30; i++) {
+    job = await (await fetch(`${BASE}/api/jobs/${jobId}`)).json();
+    if (job.status !== "running") break;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  assert.equal(job.status, "done");
+  assert.match(job.log_tail, /stub job ran/);
+});
+
+test("POST /api/jobs rejects duplicate running pair", async () => {
+  const first = await fetch(`${BASE}/api/jobs`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ assetId: 1, timeframe: "1D" }),
+  });
+  assert.equal(first.status, 200);
+  const second = await fetch(`${BASE}/api/jobs`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ assetId: 1, timeframe: "1D" }),
+  });
+  assert.equal(second.status, 409);
+});
+
+test("POST /api/jobs rejects unsupported action", async () => {
+  const res = await fetch(`${BASE}/api/jobs`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ assetId: 1, timeframe: "1D", action: "train" }),
+  });
+  assert.equal(res.status, 400);
+});
+
+test("GET /api/jobs/:id returns 404 for unknown job", async () => {
+  const res = await fetch(`${BASE}/api/jobs/999999`);
+  assert.equal(res.status, 404);
 });
 
 test("GET /api/candles 404s for missing asset data", async () => {

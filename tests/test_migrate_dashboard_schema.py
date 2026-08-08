@@ -57,6 +57,8 @@ def test_fresh_bootstrap_creates_all_tables(tmp_path):
         for ob in ("ob_conviction", "ob_bid_ask_imbalance",
                    "ob_dominant_exchange", "ob_flag"):
             assert ob in cols, f"fresh bootstrap missing {ob}"
+        actions = [r[0] for r in conn.execute("SELECT job_action FROM asset_timeframes")]
+        assert actions and all(__import__("json").loads(a) for a in actions)
     finally:
         conn.close()
 
@@ -119,6 +121,21 @@ def test_legacy_wave_degree_backfilled_by_timeframe(tmp_path):
         by_tf = dict(conn.execute(
             "SELECT timeframe, wave_degree FROM predictions ORDER BY id").fetchall())
         assert by_tf == {"1D": "intermediate", "4H": "minute", "1W": "primary"}
+    finally:
+        conn.close()
+
+
+def test_legacy_job_action_is_normalized_to_json(tmp_path):
+    db = tmp_path / "legacy_action.db"
+    mig.migrate(db)
+    conn = sqlite3.connect(db)
+    conn.execute("UPDATE asset_timeframes SET job_action='--timeframe=1D' WHERE timeframe='1D'")
+    conn.commit(); conn.close()
+    mig.migrate(db)
+    conn = sqlite3.connect(db)
+    try:
+        value = conn.execute("SELECT job_action FROM asset_timeframes WHERE timeframe='1D'").fetchone()[0]
+        assert __import__("json").loads(value) == ["--timeframe=1D"]
     finally:
         conn.close()
 

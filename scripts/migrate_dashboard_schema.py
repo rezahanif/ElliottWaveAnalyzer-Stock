@@ -21,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sqlite3
 from pathlib import Path
@@ -207,6 +208,25 @@ def create_registry_tables(conn: sqlite3.Connection) -> None:
     )
 
 
+def ensure_job_actions_json(conn: sqlite3.Connection) -> None:
+    """Normalize legacy space-delimited job_action values to JSON argv."""
+    import shlex
+    rows = conn.execute(
+        "SELECT id, job_action FROM asset_timeframes WHERE job_action IS NOT NULL"
+    ).fetchall()
+    for row_id, raw in rows:
+        try:
+            value = json.loads(raw)
+            if isinstance(value, list) and all(isinstance(x, str) for x in value):
+                continue
+        except (TypeError, json.JSONDecodeError):
+            pass
+        conn.execute(
+            "UPDATE asset_timeframes SET job_action=? WHERE id=?",
+            (json.dumps(shlex.split(raw)), row_id),
+        )
+
+
 def seed_registry(conn: sqlite3.Connection) -> None:
     """Seed assets/asset_timeframes from what actually exists in the repo today."""
     btc_checkpoint = ROOT / "models" / "wave_model.pt"
@@ -267,18 +287,15 @@ def seed_registry(conn: sqlite3.Connection) -> None:
 
 
 def _script_for(symbol: str, timeframe: str) -> tuple[str, str]:
-    """Map an asset+timeframe to the exact script/action the job runner is allowed to invoke.
-
-    This is the allow-list source of truth for the Nitro job runner (see
-    dashboard/server/server/utils/jobRunner.ts) — the API never accepts a
-    free-form command, only (asset_id, timeframe) which it resolves through
-    this table.
-    """
+    """Return allow-listed script and JSON-encoded argv."""
     if symbol == "BTC":
-        return "scripts/btc/run_daily_analysis.py", f"--timeframe={timeframe}"
-    if symbol == "BMRI.JK":
-        return "scripts/stock_orchestrator.py", "--run-now"
-    raise ValueError(f"No known script mapping for asset {symbol}")
+        argv = [f"--timeframe={timeframe}"]
+    elif symbol == "BMRI.JK":
+        argv = ["--run-now"]
+    else:
+        raise ValueError(f"No known script mapping for asset {symbol}")
+    return ("scripts/btc/run_daily_analysis.py" if symbol == "BTC"
+            else "scripts/stock_orchestrator.py", json.dumps(argv))
 
 
 def migrate(db_path: Path) -> None:
@@ -292,6 +309,7 @@ def migrate(db_path: Path) -> None:
         ensure_predictions_columns(conn)
         backfill_wave_degree(conn)
         create_registry_tables(conn)
+        ensure_job_actions_json(conn)
         seed_registry(conn)
         conn.commit()
         print("[migrate] Done.")

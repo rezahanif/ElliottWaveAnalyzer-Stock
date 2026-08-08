@@ -22,6 +22,8 @@ export default defineEventHandler((event) => {
 
   let lastPredictionId =
     (db.prepare(`SELECT MAX(id) as maxId FROM predictions`).get() as any)?.maxId || 0;
+  // One entry per job for life of SSE connection. Bounded in practice for
+  // single-user dashboard; consolidate polling/state if multi-user scale arrives.
   let lastJobState = new Map<number, string>();
 
   const stream = new ReadableStream({

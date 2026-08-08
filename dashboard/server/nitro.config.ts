@@ -7,6 +7,8 @@ export default defineNitroConfig({
     dbPath: process.env.NITRO_DB_PATH || "../../data/predictions.db",
     // Root of the Python repo, used to resolve script_path when spawning jobs.
     repoRoot: process.env.NITRO_REPO_ROOT || "../..",
-    pythonBin: process.env.NITRO_PYTHON_BIN || "python3",
+    // Required in deployment: bare python3 lacks pipeline dependencies.
+    pythonBin: process.env.NITRO_PYTHON_BIN || "",
+    jobTimeoutMs: process.env.NITRO_JOB_TIMEOUT_MS || "21600000",
   },
 });
