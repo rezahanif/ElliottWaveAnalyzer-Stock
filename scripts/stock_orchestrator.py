@@ -10,7 +10,6 @@ Exits silently on IDX holidays and weekends.
 
 from __future__ import annotations
 
-import torch
 import argparse
 import os
 import sys
@@ -22,6 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.stock.collectors.idx_holidays import is_idx_trading_day
+from src.stock.data.storage import BMRIStorage
 from src.stock.telegram.handlers import handle_bmri, handle_report
 from src.shared.telegram.client import send_telegram
 import yaml
@@ -42,15 +42,21 @@ def load_stock_telegram_config() -> tuple[Optional[str], Optional[list[str]]]:
         with open(config_path, "r") as f:
             cfg = yaml.safe_load(f)
         tele = cfg.get("telegram", {})
-        return tele.get("bot_token"), tele.get("chat_ids")
+        token = os.environ.get("STOCK_TELEGRAM_BOT_TOKEN") or tele.get("bot_token")
+        return token, tele.get("chat_ids")
     except Exception as e:
         print(f"Warning: Failed to load stock Telegram config: {e}", file=sys.stderr)
         return None, None
 
 
+def export_bmri_candles() -> None:
+    BMRIStorage().export_ohlcv_json("daily")
+
+
 def run_closing_analysis(dry_run: bool = False):
     """Run full BMRI closing analysis and send alert."""
     print("Running BMRI closing analysis...")
+    export_bmri_candles()
     msg = handle_bmri("", [])
     token, ids = load_stock_telegram_config()
     send_telegram(msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
@@ -59,6 +65,7 @@ def run_closing_analysis(dry_run: bool = False):
 def run_morning_update(dry_run: bool = False):
     """Run morning market briefing."""
     print("Running BMRI morning context update...")
+    export_bmri_candles()
     # Send a quick fundamental & news snapshot before market opens
     msg = handle_report("", [])
     header = (
@@ -72,6 +79,7 @@ def run_morning_update(dry_run: bool = False):
 def run_midday_update(dry_run: bool = False):
     """Run BMRI midday technical update."""
     print("Running BMRI midday technical update...")
+    export_bmri_candles()
     msg = handle_bmri("", [])
     token, ids = load_stock_telegram_config()
     send_telegram(msg, dry_run=dry_run, bot_token=token, chat_ids=ids, label="stock-alert")
@@ -80,6 +88,7 @@ def run_midday_update(dry_run: bool = False):
 def run_weekly_review(dry_run: bool = False):
     """Run weekly strategy review on Saturday."""
     print("Running BMRI weekly review...")
+    export_bmri_candles()
     # Summary of news, fundamentals, and general technical levels
     msg = handle_report("", [])
     header = (

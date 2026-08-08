@@ -66,6 +66,8 @@ def test_rule_engine_buy_signal():
     print("Reasons:", result["reasons"])
     
     assert result["signal"] == "BUY"
+    assert result["cluster_lower"] == 95.0
+    assert result["cluster_upper"] == 105.0
     assert "invalidation" in result
 
 

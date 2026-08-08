@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from datetime import datetime, date
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -148,6 +149,25 @@ class BMRIStorage:
         # Update metadata
         self.metadata.update_coverage(freq, df)
         self.metadata.save()
+
+    def export_ohlcv_json(self, freq: str = "daily", path: Optional[Path] = None) -> Path:
+        """Export candles using dashboard's shared OHLCV JSON contract."""
+        df = self.load(freq)
+        if df is None or df.empty:
+            raise FileNotFoundError(f"No {freq} BMRI data available")
+        cols = ["timestamp_ms", "open", "high", "low", "close", "volume"]
+        missing = [col for col in cols if col not in df.columns]
+        if missing:
+            raise ValueError(f"Missing OHLCV columns: {missing}")
+        out_path = path or self.root.parent.parent / "ohlcv" / "BMRI.JK_1D.json"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for row in df[cols].itertuples(index=False, name=None):
+            rows.append([None if isinstance(v, float) and not math.isfinite(v) else v for v in row])
+        out_path.write_text(json.dumps({
+            "asset": "BMRI.JK", "timeframe": "1D", "columns": cols, "data": rows
+        }, allow_nan=False))
+        return out_path
     
     def append(self, new_df: pd.DataFrame, freq: str = "daily") -> int:
         """Append new bars to existing data, deduplicate by timestamp."""

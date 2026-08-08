@@ -30,12 +30,16 @@ def evaluate_rules(
     near_fib_support = False
     near_fib_resistance = False
     fib_zones_text = "No valid zones"
+    cluster_upper = None
+    cluster_lower = None
 
     if fib_res and fib_res.cluster_valid:
         # Check if current price is close to the cluster support/resistance
-        cluster_mid = (fib_res.cluster_lower + fib_res.cluster_upper) / 2.0
+        cluster_lower = float(fib_res.cluster_lower)
+        cluster_upper = float(fib_res.cluster_upper)
+        cluster_mid = (cluster_lower + cluster_upper) / 2.0
         deviation = abs(current_price - cluster_mid) / cluster_mid
-        fib_zones_text = f"${fib_res.cluster_lower:,.2f} - ${fib_res.cluster_upper:,.2f}"
+        fib_zones_text = f"${cluster_lower:,.2f} - ${cluster_upper:,.2f}"
 
         if direction == "bullish":
             # In bullish wave, cluster acts as buy/support zone
@@ -122,6 +126,8 @@ def evaluate_rules(
         "price": current_price,
         "signal": signal,
         "invalidation": invalidation,
+        "cluster_upper": cluster_upper,
+        "cluster_lower": cluster_lower,
         "fib_zone": fib_zones_text,
         "reasons": reasons,
         "metrics": {

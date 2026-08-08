@@ -11,6 +11,8 @@ import logging
 from datetime import datetime, date
 from typing import List, Dict, Any
 
+from src.stock.persistence import persist_prediction
+
 from src.stock.analyzer import StockAnalyzer
 from src.stock.collectors.price import fetch_price_data
 from src.stock.collectors.ihsg import fetch_ihsg_data
@@ -22,7 +24,6 @@ from src.stock.forecast.rule_engine import evaluate_rules
 from src.stock.forecast.confidence import compute_confidence
 
 logger = logging.getLogger("stock_telegram_handlers")
-
 
 def handle_bmri(chat_id: str, args: List[str]) -> str:
     """Handle /bmri command: run full pipeline on the fly and report."""
@@ -66,6 +67,12 @@ def handle_bmri(chat_id: str, args: List[str]) -> str:
         fundamentals=fundamentals,
         news_sentiment=news_sentiment,
         fusion_result=fusion_result,
+    )
+    persist_prediction(
+        current_price=float(current_price),
+        analysis_res=analysis_res,
+        forecast=forecast,
+        confidence=confidence,
     )
     
     # 7. AI Forecast status line

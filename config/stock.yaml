@@ -17,7 +17,8 @@ paths:
   predictions_db: "data/predictions.db"
 
 telegram:
-  bot_token: "8529642967:REDACTED"
+  # Set STOCK_TELEGRAM_BOT_TOKEN in environment; never commit token.
+  bot_token: ""
   chat_ids:
     - "1179211752"
 

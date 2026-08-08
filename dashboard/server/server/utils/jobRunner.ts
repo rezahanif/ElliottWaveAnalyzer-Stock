@@ -23,6 +23,20 @@ function parseArgv(raw: string): string[] {
   }
 }
 
+function actionArgs(row: AllowRow, requested: string): string[] {
+  const args = parseArgv(row.job_action);
+  if (row.symbol !== "BMRI.JK" || requested === "run") return args;
+  if (!["morning", "midday", "closing", "weekly"].includes(requested)) {
+    throw createError({ statusCode: 400, statusMessage: "invalid BMRI action" });
+  }
+  const index = args.indexOf("--action");
+  if (index < 0 || index + 1 >= args.length) {
+    throw createError({ statusCode: 500, statusMessage: "BMRI allow-list missing --action" });
+  }
+  args[index + 1] = requested;
+  return args;
+}
+
 export function triggerJob(input: TriggerJobInput): { jobId: number } {
   const db = useDb();
   const row = db.prepare(`
@@ -58,7 +72,7 @@ export function triggerJob(input: TriggerJobInput): { jobId: number } {
     throw createError({ statusCode: 500, statusMessage: "NITRO_PYTHON_BIN is required" });
   }
   const repoRoot = path.resolve(process.cwd(), String(config.repoRoot));
-  const child = spawn(pythonBin, [row.script_path, ...parseArgv(row.job_action)], {
+  const child = spawn(pythonBin, [row.script_path, ...actionArgs(row, input.action)], {
     cwd: repoRoot, env: process.env,
   });
   let logTail = "";

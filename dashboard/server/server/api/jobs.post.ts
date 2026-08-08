@@ -12,8 +12,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "assetId (number) and timeframe (string) are required" });
   }
   const action = body.action ?? "run";
-  if (typeof action !== "string" || !["run"].includes(action)) {
-    throw createError({ statusCode: 400, statusMessage: "action must be run" });
+  if (typeof action !== "string" || !["run", "morning", "midday", "closing", "weekly"].includes(action)) {
+    throw createError({ statusCode: 400, statusMessage: "invalid action" });
   }
 
   const { jobId } = triggerJob({

@@ -218,6 +218,9 @@ def ensure_job_actions_json(conn: sqlite3.Connection) -> None:
         try:
             value = json.loads(raw)
             if isinstance(value, list) and all(isinstance(x, str) for x in value):
+                if value == ["--run-now"] or value == ["--action"]:
+                    value = ["--action", "closing"]
+                    conn.execute("UPDATE asset_timeframes SET job_action=? WHERE id=?", (json.dumps(value), row_id))
                 continue
         except (TypeError, json.JSONDecodeError):
             pass
@@ -291,7 +294,7 @@ def _script_for(symbol: str, timeframe: str) -> tuple[str, str]:
     if symbol == "BTC":
         argv = [f"--timeframe={timeframe}"]
     elif symbol == "BMRI.JK":
-        argv = ["--run-now"]
+        argv = ["--action", "closing"]
     else:
         raise ValueError(f"No known script mapping for asset {symbol}")
     return ("scripts/btc/run_daily_analysis.py" if symbol == "BTC"
