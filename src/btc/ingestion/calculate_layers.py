@@ -62,7 +62,18 @@ def generate_volatility_layers(input_path='data/ohlcv/BTC_4H.json'):
     }
 
     os.makedirs('data/pivots', exist_ok=True)
-    output_path = f'data/pivots/BTC_{timeframe}_with_layers.json'
+    # Asset slug comes from the INPUT filename (e.g. 'BTC_4H.json' -> 'BTC'),
+    # not from the 'asset' field inside the JSON payload — that field holds
+    # the exchange pair name (e.g. 'BTCUSD' per fetch_ohlcv.py), which is a
+    # different, decoupled convention from the file naming scheme. Deriving
+    # from the input filename preserves exact backward compatibility for
+    # BTC (still produces BTC_{tf}_with_layers.json) while generalizing
+    # correctly for a new asset's own input file, e.g. ETH_1D.json ->
+    # ETH_1D_with_layers.json. Previously this was hardcoded to 'BTC_'
+    # regardless of input, silently colliding with BTC's file for any
+    # other asset run through this function.
+    asset_slug = os.path.basename(input_path).split('_')[0]
+    output_path = f'data/pivots/{asset_slug}_{timeframe}_with_layers.json'
     
     with open(output_path, 'w') as f:
         json.dump(output_data, f, indent=2)

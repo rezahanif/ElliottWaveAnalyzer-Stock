@@ -13,7 +13,9 @@ This file contains NO logic. It is a data contract only.
 Import it wherever a list of pivots is consumed or produced.
 
 Usage:
-    from src.btc.pivots.pivot_schema import PivotPoint, SwingType, WaveDegree, PivotLayer
+    from src.btc.pivots.pivot_schema import (
+        PivotPoint, SwingType, WaveDegree, PivotLayer, LiveSwingState,
+    )
 """
 
 from __future__ import annotations
@@ -243,6 +245,92 @@ class PivotPoint:
             f"layer={self.layer.value} | Δ={self.swing_magnitude_pct:.2f}%)"
         )
 
+
+# ─────────────────────────────────────────────
+# Live (unconfirmed) swing state
+# ─────────────────────────────────────────────
+
+@dataclass
+class LiveSwingState:
+    """
+    Snapshot of a ZigZag state machine's in-progress swing, as of the
+    last bar processed — i.e. what hasn't been confirmed as a PivotPoint
+    yet, but is being tracked toward confirmation.
+
+    Produced by:   _ZigZagState.live_state()  (zigzag.py)
+    Consumed by:   dashboard signal-tension endpoint
+
+    Unlike PivotPoint, which is always settled history, this is
+    forward-looking: "how close is the next pivot to confirming, and
+    what price would confirm it right now." Read-only introspection over
+    state the detector already tracks every bar — computing this never
+    changes which pivots get confirmed.
+
+    Fields
+    ------
+    layer               PivotLayer  MACRO or MICRO
+    state               str         "SEEKING_HIGH" or "SEEKING_LOW"
+    direction           str         "short" if SEEKING_HIGH (confirming a
+                                     top), "long" if SEEKING_LOW (confirming
+                                     a bottom) — derived, not stored twice
+    extreme_price       float       running high (SEEKING_HIGH) or low
+                                     (SEEKING_LOW) since the last pivot
+    locked_threshold    float       ratio (e.g. 0.018 for 1.8%), locked at
+                                     the last direction change
+    trigger_price       float       exact price that would confirm the
+                                     pivot right now, given extreme_price
+                                     and locked_threshold
+    price_progress_pct  float       0-100, how far the current close has
+                                     moved from extreme_price toward
+                                     trigger_price
+    bars_elapsed        int         bars since the last confirmed pivot
+                                     on this layer
+    bars_required       int         minimum bars required before the next
+                                     pivot can confirm (timeframe-dependent)
+    bars_ready          bool        bars_elapsed >= bars_required
+    last_pivot_*        —           the last confirmed pivot on this layer,
+                                     for context (None if no pivot yet)
+    """
+    layer:               PivotLayer
+    state:               str
+    direction:           str
+    extreme_price:       float
+    locked_threshold:    float
+    trigger_price:        float
+    price_progress_pct:  float
+    bars_elapsed:         int
+    bars_required:         int
+    bars_ready:             bool
+    last_pivot_structure_label: Optional[str]   = None
+    last_pivot_magnitude_pct:   Optional[float] = None
+    last_pivot_timestamp_ms:    Optional[int]   = None
+
+    def to_dict(self) -> dict:
+        """Serialize to plain dict, snake_case — matches PivotPoint.to_dict()'s
+        convention. Presentation-layer renaming (e.g. camelCase for the API)
+        happens at the API boundary, not here."""
+        return {
+            "layer":              self.layer.value,
+            "state":              self.state,
+            "direction":          self.direction,
+            "extreme_price":      self.extreme_price,
+            "locked_threshold":   self.locked_threshold,
+            "trigger_price":      self.trigger_price,
+            "price_progress_pct": self.price_progress_pct,
+            "bars_elapsed":       self.bars_elapsed,
+            "bars_required":      self.bars_required,
+            "bars_ready":         self.bars_ready,
+            "last_pivot": None if self.last_pivot_structure_label is None else {
+                "structure_label": self.last_pivot_structure_label,
+                "magnitude_pct":   self.last_pivot_magnitude_pct,
+                "timestamp_ms":    self.last_pivot_timestamp_ms,
+            },
+        }
+
+
+# ─────────────────────────────────────────────
+# JSON-serialization helpers
+# ─────────────────────────────────────────────
 
 def sanitize_pivot_dict(d: dict) -> dict:
     """

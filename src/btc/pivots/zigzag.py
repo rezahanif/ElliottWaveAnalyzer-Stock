@@ -32,6 +32,9 @@ Usage:
     macro_pivots = result.macro   # List[PivotPoint] — institutional swings
     micro_pivots = result.micro   # List[PivotPoint] — sub-wave pivots
     all_pivots   = result.all()   # merged, sorted by bar_index
+
+    macro_live = result.macro_live   # LiveSwingState | None — in-progress swing
+    micro_live = result.micro_live   # LiveSwingState | None — in-progress swing
 """
 
 from __future__ import annotations
@@ -44,6 +47,7 @@ from typing import List, Optional, Tuple
 import pandas as pd
 
 from src.btc.pivots.pivot_schema import (
+    LiveSwingState,
     PivotLayer,
     PivotPoint,
     StructureLabel,
@@ -60,10 +64,15 @@ from src.btc.pivots.pivot_schema import (
 class ZigZagResult:
     """
     Output of ZigZagDetector.run().
-    Contains two independent pivot lists — one per threshold layer.
+    Contains two independent pivot lists — one per threshold layer —
+    plus each layer's live (unconfirmed) swing state as of the last bar
+    processed. macro_live/micro_live are None only if there wasn't yet
+    enough data to establish a first direction (still in INIT).
     """
     macro: List[PivotPoint] = field(default_factory=list)
     micro: List[PivotPoint] = field(default_factory=list)
+    macro_live: Optional[LiveSwingState] = None
+    micro_live: Optional[LiveSwingState] = None
     timeframe: str = ""
     asset: str = ""
     total_bars: int = 0
@@ -84,6 +93,16 @@ class ZigZagResult:
             return [p.to_dict() for p in self.all()]
 
     def summary(self) -> str:
+        def _live_line(label: str, live: Optional["LiveSwingState"]) -> str:
+            if live is None:
+                return f"  {label} live  : (not enough data yet)"
+            return (
+                f"  {label} live  : {live.state} → {live.direction} signal, "
+                f"{live.price_progress_pct:.0f}% toward {live.trigger_price:,.2f} "
+                f"(bars {live.bars_elapsed}/{live.bars_required}"
+                f"{', ready' if live.bars_ready else ''})"
+            )
+
         return (
             f"ZigZagResult [{self.asset} {self.timeframe}]\n"
             f"  Total bars  : {self.total_bars}\n"
@@ -92,7 +111,9 @@ class ZigZagResult:
             f"{sum(1 for p in self.macro if p.is_low())} lows)\n"
             f"  Micro pivots: {len(self.micro)} "
             f"({sum(1 for p in self.micro if p.is_high())} highs, "
-            f"{sum(1 for p in self.micro if p.is_low())} lows)"
+            f"{sum(1 for p in self.micro if p.is_low())} lows)\n"
+            f"{_live_line('Macro', self.macro_live)}\n"
+            f"{_live_line('Micro', self.micro_live)}"
         )
 
 
@@ -131,6 +152,12 @@ class _ZigZagState:
         self.extreme_low:   float = 0.0     # full candle low at extreme bar
         self.extreme_close: float = 0.0     # close at extreme bar
         self.extreme_vol:   float = 0.0     # volume at extreme bar
+
+        # Last-seen bar — tracked unconditionally every process_bar() call
+        # so live_state() can report proximity-to-confirmation after the
+        # loop ends, without needing a special final-bar hook.
+        self.last_close:        float = 0.0
+        self.current_bar_index: int   = -1
 
         # Locked threshold — set when direction changes, held until next pivot
         self.locked_threshold: float = 0.0
@@ -208,6 +235,53 @@ class _ZigZagState:
         """Enforce minimum bar distance from last confirmed pivot."""
         return (current_bar - self.last_pivot_bar) >= self.min_bars
 
+    def live_state(self) -> Optional[LiveSwingState]:
+        """
+        Snapshot of the in-progress swing as of the last bar processed.
+
+        Read-only: uses only state process_bar() already maintains every
+        bar (extreme_price, locked_threshold, last_close, etc.) — calling
+        this has no effect on confirmation logic or the confirmed pivot
+        list. Returns None if still in INIT (no direction established yet,
+        e.g. not enough bars processed to seed a first swing).
+        """
+        if self.state is None or self.locked_threshold <= 0:
+            return None
+
+        if self.state == self.SEEKING_HIGH:
+            # Confirms a top → short signal. Progress = how far close has
+            # dropped from the peak toward the locked threshold.
+            pct_from_extreme = (self.extreme_price - self.last_close) / self.extreme_price
+            trigger_price = self.extreme_price * (1 - self.locked_threshold)
+            direction = "short"
+        else:
+            # SEEKING_LOW: confirms a bottom → long signal. Progress = how
+            # far close has bounced from the trough toward the threshold.
+            pct_from_extreme = (self.last_close - self.extreme_price) / self.extreme_price
+            trigger_price = self.extreme_price * (1 + self.locked_threshold)
+            direction = "long"
+
+        price_progress_pct = max(0.0, min(1.0, pct_from_extreme / self.locked_threshold)) * 100
+        bars_elapsed = self.current_bar_index - self.last_pivot_bar
+
+        last_pivot = self.pivots[-1] if self.pivots else None
+
+        return LiveSwingState(
+            layer               = self.layer,
+            state               = self.state,
+            direction           = direction,
+            extreme_price       = self.extreme_price,
+            locked_threshold    = self.locked_threshold,
+            trigger_price       = trigger_price,
+            price_progress_pct  = round(price_progress_pct, 2),
+            bars_elapsed        = bars_elapsed,
+            bars_required       = self.min_bars,
+            bars_ready          = bars_elapsed >= self.min_bars,
+            last_pivot_structure_label = last_pivot.structure_label.value if last_pivot else None,
+            last_pivot_magnitude_pct   = last_pivot.swing_magnitude_pct if last_pivot else None,
+            last_pivot_timestamp_ms    = last_pivot.timestamp_ms if last_pivot else None,
+        )
+
     def process_bar(self, row: pd.Series, bar_index: int, threshold_col: str):
         """
         Process one bar. May append 0 or 1 pivot to self.pivots.
@@ -221,6 +295,9 @@ class _ZigZagState:
         close      = float(row["close"])
         volume     = float(row.get("volume", 0.0))
         bar_threshold = float(row[threshold_col]) / 100.0  # convert pct → ratio
+
+        self.last_close        = close
+        self.current_bar_index = bar_index
 
         # ── INIT: establish first direction from first meaningful move ──
         if self.state == self.INIT:
@@ -414,6 +491,8 @@ class ZigZagDetector:
         return ZigZagResult(
             macro      = macro_sm.pivots,
             micro      = micro_sm.pivots,
+            macro_live = macro_sm.live_state(),
+            micro_live = micro_sm.live_state(),
             timeframe  = self.timeframe,
             asset      = asset,
             total_bars = len(df),
