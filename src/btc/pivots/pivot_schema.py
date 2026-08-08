@@ -19,6 +19,7 @@ Usage:
 """
 
 from __future__ import annotations
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -325,3 +326,20 @@ class LiveSwingState:
                 "timestamp_ms":    self.last_pivot_timestamp_ms,
             },
         }
+
+
+# ─────────────────────────────────────────────
+# JSON-serialization helpers
+# ─────────────────────────────────────────────
+
+def sanitize_pivot_dict(d: dict) -> dict:
+    """
+    JSON-safe copy of a PivotPoint.to_dict(): NaN/Inf floats → None.
+
+    Node's JSON.parse rejects bare NaN/Infinity literals, so raw to_dict()
+    output (rsi_at_pivot, fib_context, ... default to NaN) would break the
+    dashboard /api/pivots route. Use this wherever pivots are serialized
+    for the web layer (e.g. run_daily_analysis.dump_pivots).
+    """
+    return {k: (None if isinstance(v, float) and (math.isnan(v) or math.isinf(v)) else v)
+            for k, v in d.items()}

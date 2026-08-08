@@ -45,6 +45,18 @@ import sys
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Predictions schema lives in scripts/migrate_dashboard_schema.py (single
+# source of truth — see its PREDICTIONS_COLUMNS). Importing here means this
+# pipeline can never drift from what the dashboard API expects.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from scripts.migrate_dashboard_schema import (
+    ensure_predictions_columns,
+    ensure_predictions_index,
+    ensure_predictions_table,
+)
 from typing import Dict, Optional, Tuple
 
 import numpy as np
@@ -66,7 +78,7 @@ if env_path.exists():
 
 
 from src.btc.pivots.zigzag import ZigZagDetector
-from src.btc.pivots.pivot_schema import SwingType
+from src.btc.pivots.pivot_schema import SwingType, sanitize_pivot_dict
 from src.btc.fib_engine.fibonacci import FibonacciEngine
 
 # Order-book conviction layer — phase 3 integration.
@@ -76,7 +88,7 @@ from src.btc.fib_engine.fibonacci import FibonacciEngine
 try:
     from src.btc.orderbook.fetcher import fetch_multi_exchange_orderbook
     from src.btc.orderbook.scorer import OrderBookConvictionScorer, ConvictionReport, score_from_snapshot_dict
-    from src.btc.orderbook.snapshot import load_latest_snapshot
+    from src.btc.orderbook.snapshot import load_latest_snapshot, write_snapshot
     ORDERBOOK_LAYER_AVAILABLE = True
 except ImportError as _e:
     ORDERBOOK_LAYER_AVAILABLE = False
@@ -363,6 +375,30 @@ def detect_latest_pivots(df: pd.DataFrame, timeframe: str):
     result   = detector.run(df, asset="BTCUSD")
     print(f"  [zigzag] {timeframe}: {len(result.macro)} macro | {len(result.micro)} micro pivots")
     return result.macro, result.micro
+
+
+def dump_pivots(timeframe: str, macro_pivots, micro_pivots) -> str:
+    """
+    Persist the confirmed pivots to data/pivots/{asset}_{timeframe}_pivots.json
+    so the dashboard /api/pivots route can serve them without re-running
+    ZigZag. Shape mirrors PivotPoint.to_dict() (see src/btc/pivots/pivot_schema.py).
+
+    NaN values (rsi_at_pivot, fib_context, ...) are sanitized to None via
+    pivot_schema.sanitize_pivot_dict — Node's JSON.parse rejects bare NaN
+    literals, so raw to_dict() output would 500 the Nitro route.
+    """
+    os.makedirs(LAYERS_DIR, exist_ok=True)
+    path = os.path.join(LAYERS_DIR, f"BTC_{timeframe}_pivots.json")
+    out = {
+        "asset":     "BTCUSD",
+        "timeframe": timeframe,
+        "macro":     [sanitize_pivot_dict(p.to_dict()) for p in macro_pivots],
+        "micro":     [sanitize_pivot_dict(p.to_dict()) for p in micro_pivots],
+    }
+    with open(path, "w") as f:
+        json.dump(out, f)
+    print(f"  [zigzag] Persisted {len(macro_pivots)} macro + {len(micro_pivots)} micro pivots → {path}")
+    return path
 
 
 # ─────────────────────────────────────────────────────────────
@@ -681,6 +717,27 @@ def apply_orderbook_conviction(
                 confluence_zone=confluence_zone,
             )
             source = "live"
+            # Per-exchange health line — so host-side reachability of each
+            # venue is visible in logs (previously only the aggregate verdict).
+            print(f"  [orderbook] exchanges: {report.exchanges_succeeded} ok / {report.exchanges_failed} failed"
+                  + (f" — {', '.join(report.failed_exchanges)}" if report.failed_exchanges else ""))
+            for sig in report.per_exchange:
+                if sig.fetch_error:
+                    print(f"  [orderbook]   {sig.exchange}: FAILED — {sig.fetch_error}")
+                else:
+                    print(f"  [orderbook]   {sig.exchange}: spot=${sig.spot_price:,.0f} "
+                          f"walls={len(sig.bid_walls) + len(sig.ask_walls)} "
+                          f"(bid ${sum(w.usd_value for w in sig.bid_walls):,.0f} / "
+                          f"ask ${sum(w.usd_value for w in sig.ask_walls):,.0f})")
+            # Persist raw snapshot so future runs hit the cached fast-path and
+            # data/orderbook/ accumulates for the calibration backtest.
+            try:
+                write_snapshot({
+                    "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                    "exchanges": {name: snap.to_dict() for name, snap in snaps.items()},
+                })
+            except Exception as e:
+                print(f"  [orderbook] Failed to write snapshot: {e}")
         except Exception as e:
             print(f"  [orderbook] Live fetch failed: {e}")
             neutral_record = {
@@ -710,7 +767,15 @@ def apply_orderbook_conviction(
         "ob_dominant_exchange":   dominant_exchange,
         "ob_flag":                report.flag_string,
     }
-    flag_out = report.flag_string + (f" (source: {source})" if source else "")
+    # Append bid/ask wall breakdown so the alert always shows what the
+    # order book actually held, even when the verdict is neutral.
+    wall_breakdown = ""
+    if report.bid_walls or report.ask_walls:
+        bid_total = sum(w.usd_value for w in report.bid_walls)
+        ask_total = sum(w.usd_value for w in report.ask_walls)
+        wall_breakdown = (f" | bid walls {len(report.bid_walls)} ${bid_total:,.0f} / "
+                          f"ask walls {len(report.ask_walls)} ${ask_total:,.0f}")
+    flag_out = report.flag_string + wall_breakdown + (f" (source: {source})" if source else "")
     print(f"  [orderbook] {flag_out}")
     return final_strength, flag_out, ob_record
 
@@ -720,66 +785,17 @@ def apply_orderbook_conviction(
 # ─────────────────────────────────────────────────────────────
 
 def init_db(db_path: str):
-    """Create predictions table if not exists and run migrations if needed."""
+    """Create predictions table if not exists and run migrations if needed.
+
+    Schema is owned by scripts/migrate_dashboard_schema.py — this module only
+    calls the shared ensure_* helpers, never defines its own CREATE TABLE
+    (that duplication was the drift bug that let ob_*/asset columns diverge).
+    """
     os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else '.', exist_ok=True)
     conn = sqlite3.connect(db_path)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
-            id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp             DATETIME DEFAULT CURRENT_TIMESTAMP,
-            timeframe             TEXT,
-            direction             TEXT,
-            btc_close_at_signal   REAL,
-            cluster_valid         INTEGER,
-            cluster_upper         REAL,
-            cluster_lower         REAL,
-            cluster_strength      REAL,
-            cluster_strength_adj  REAL,
-            target_a              REAL,
-            target_b              REAL,
-            scenario_a_price      REAL,
-            scenario_b_price      REAL,
-            invalidation_level    REAL,
-            c_top                 REAL,
-            b_low                 REAL,
-            q10_7d REAL, q50_7d REAL, q90_7d REAL,
-            q10_14d REAL, q50_14d REAL, q90_14d REAL,
-            q10_30d REAL, q50_30d REAL, q90_30d REAL,
-            q10_60d REAL, q50_60d REAL, q90_60d REAL,
-            calendar_risk_flag    TEXT,
-            macro_pivot_count     INTEGER,
-            micro_pivot_count     INTEGER,
-            actual_outcome        TEXT,
-            prediction_correct    INTEGER
-        )
-    """)
-
-    # Run migration to add direction if it's missing in existing database
-    cursor = conn.execute("PRAGMA table_info(predictions)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "direction" not in columns:
-        try:
-            conn.execute("ALTER TABLE predictions ADD COLUMN direction TEXT")
-            print("  [db] Migration: Added 'direction' column to predictions table.")
-        except Exception as e:
-            print(f"  [db] Migration failed: {e}")
-
-    # Order-book conviction columns (Phase 3 integration). Additive — never
-    # breaks existing rows; defaults to NULL/1.0.
-    ob_columns = [
-        ("ob_conviction",         "REAL"),  # multiplier applied (0.5 - 1.10)
-        ("ob_bid_ask_imbalance",  "REAL"),  # weighted avg imbalance [-1, +1]
-        ("ob_dominant_exchange",  "TEXT"),  # exchange with largest wall
-        ("ob_flag",               "TEXT"),  # human-readable summary
-    ]
-    for col_name, col_type in ob_columns:
-        if col_name not in columns:
-            try:
-                conn.execute(f"ALTER TABLE predictions ADD COLUMN {col_name} {col_type}")
-                print(f"  [db] Migration: Added '{col_name}' column to predictions table.")
-            except Exception as e:
-                print(f"  [db] Migration failed for {col_name}: {e}")
-
+    ensure_predictions_table(conn)
+    ensure_predictions_columns(conn)
+    ensure_predictions_index(conn)
     conn.commit()
     conn.close()
 
@@ -940,6 +956,7 @@ def run_pipeline(
 
     # Step 4: Pivot detection
     macro_pivots, micro_pivots = detect_latest_pivots(df_layers, timeframe)
+    dump_pivots(timeframe, macro_pivots, micro_pivots)
 
     # Step 5: Inference window
     window_df = prep_inference_window(df_layers, macro_pivots, timeframe)
@@ -978,6 +995,7 @@ def run_pipeline(
         "asset":                 "BTC",
         "timeframe":             timeframe,
         "direction":             fib_result['direction'] if fib_result else "neutral",
+        "wave_degree":           (macro_pivots[-1].degree.value if macro_pivots else None),
         "btc_close_at_signal":   current_price,
         "cluster_valid":         int(fib_result['cluster_valid']) if fib_result else 0,
         "cluster_upper":         fib_result['cluster_upper']    if fib_result else None,

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nitropack dev",
     "build": "nitropack build",
-    "preview": "node .output/server/index.mjs"
+    "preview": "node .output/server/index.mjs",
+    "test": "node --test tests/api.test.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

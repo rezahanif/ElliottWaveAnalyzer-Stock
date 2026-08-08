@@ -54,10 +54,10 @@ exchanges:
 # (price × qty) exceeds the configured threshold. Only walls above
 # this threshold are reported; smaller orders are treated as noise.
 #
-# Default: $1,000,000 (1M USD). At BTC ~$60k, that's ~16.7 BTC
-# parked at a single price level — clearly visible intent, not
-# retail noise.
-wall_threshold_usd: 1_000_000
+# Default: $100,000 (100K USD). At BTC ~$65k, that's ~1.5 BTC
+# parked at a single price level — picks up real liquidity walls
+# without requiring whale-scale book depth.
+wall_threshold_usd: 100_000
 
 # Bands around spot for imbalance calculation. Only orders within
 # ±band_pct of spot are counted towards bid/ask imbalance (this

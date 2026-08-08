@@ -13,6 +13,7 @@ const PREDICTION_COLS = `
   asset,
   timeframe,
   direction AS wave_position,
+  wave_degree,
   btc_close_at_signal AS current_price,
   cluster_valid,
   cluster_strength,
