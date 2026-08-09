@@ -2,24 +2,30 @@
 import { ref, onMounted } from "vue";
 import { api, type Asset } from "./lib/api";
 import AssetTab from "./components/AssetTab.vue";
+import LoginGate from "./components/LoginGate.vue";
 
+const authenticated = ref(false);
 const assets = ref<Asset[]>([]);
 const activeId = ref<number | null>(null);
 const error = ref<string | null>(null);
 
-onMounted(async () => {
+async function load() {
   try {
     const res = await api.getAssets();
+    authenticated.value = true;
     assets.value = res.assets;
     activeId.value = res.assets[0]?.id ?? null;
   } catch (e: any) {
-    error.value = e.message;
+    if (!String(e.message).includes("Authentication required")) error.value = e.message;
   }
-});
+}
+
+onMounted(load);
 </script>
 
 <template>
-  <main>
+  <LoginGate v-if="!authenticated" @authenticated="load" />
+  <main v-else>
     <h1>Elliott Wave Dashboard</h1>
 
     <p v-if="error" class="error">{{ error }}</p>

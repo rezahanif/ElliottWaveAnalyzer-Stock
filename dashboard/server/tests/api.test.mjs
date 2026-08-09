@@ -19,6 +19,14 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 3311 + Math.floor(Math.random() * 500);
 const BASE = `http://127.0.0.1:${PORT}`;
+let authCookie = "";
+const { default: bcrypt } = await import("bcryptjs");
+const TEST_PASSWORD_HASH = await bcrypt.hash("password", 4);
+async function authedFetch(url, init = {}) {
+  const headers = new Headers(init.headers || {});
+  if (authCookie) headers.set("cookie", authCookie);
+  return fetch(url, { ...init, headers });
+}
 
 let fixtureDir;
 let server;
@@ -59,7 +67,7 @@ async function waitReady(timeoutMs = 20000) {
   while (Date.now() < deadline) {
     try {
       const res = await fetch(`${BASE}/api/assets`);
-      if (res.ok) return;
+      if (res.status > 0) return;
     } catch {
       // not up yet
     }
@@ -141,17 +149,29 @@ before(async () => {
     env: {
       ...process.env,
       PORT: String(PORT),
+      NITRO_PORT: String(PORT),
       NITRO_DB_PATH: join(fixtureDir, "data", "predictions.db"),
       NITRO_REPO_ROOT: fixtureDir,
+      NITRO_HOST: "127.0.0.1",
+      HOST: "127.0.0.1",
       NITRO_PYTHON_BIN: process.execPath,
       NITRO_JOB_TIMEOUT_MS: "5000",
+      DASHBOARD_PASSWORD_HASH: TEST_PASSWORD_HASH,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
   server.stdout.on("data", (d) => (serverLog += d));
   server.stderr.on("data", (d) => (serverLog += d));
 
-  await waitReady();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const unauth = await fetch(`${BASE}/api/assets`);
+  assert.equal(unauth.status, 401);
+  const login = await fetch(`${BASE}/api/auth/login`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ password: "password" }),
+  });
+  assert.equal(login.status, 200);
+  authCookie = login.headers.get("set-cookie").split(";")[0];
 });
 
 after(() => {
@@ -160,7 +180,7 @@ after(() => {
 });
 
 test("GET /api/assets returns registry with nested timeframes", async () => {
-  const res = await fetch(`${BASE}/api/assets`);
+  const res = await authedFetch(`${BASE}/api/assets`);
   assert.equal(res.status, 200);
   const body = await res.json();
   const btc = body.assets.find((a) => a.symbol === "BTC");
@@ -169,7 +189,7 @@ test("GET /api/assets returns registry with nested timeframes", async () => {
 });
 
 test("GET /api/predictions returns rows with wave_degree", async () => {
-  const res = await fetch(`${BASE}/api/predictions?asset=BTC&timeframe=1D`);
+  const res = await authedFetch(`${BASE}/api/predictions?asset=BTC&timeframe=1D`);
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.count, 1);
@@ -180,12 +200,12 @@ test("GET /api/predictions returns rows with wave_degree", async () => {
 });
 
 test("GET /api/predictions rejects missing params with 400", async () => {
-  const res = await fetch(`${BASE}/api/predictions`);
+  const res = await authedFetch(`${BASE}/api/predictions`);
   assert.equal(res.status, 400);
 });
 
 test("GET /api/candles returns candlestick bars", async () => {
-  const res = await fetch(`${BASE}/api/candles?asset=BTC&timeframe=1D`);
+  const res = await authedFetch(`${BASE}/api/candles?asset=BTC&timeframe=1D`);
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.count, 3);
@@ -195,34 +215,34 @@ test("GET /api/candles returns candlestick bars", async () => {
 });
 
 test("GET /api/candles respects limit", async () => {
-  const res = await fetch(`${BASE}/api/candles?asset=BTC&timeframe=1D&limit=2`);
+  const res = await authedFetch(`${BASE}/api/candles?asset=BTC&timeframe=1D&limit=2`);
   const body = await res.json();
   assert.equal(body.count, 2);
 });
 
 test("GET /api/pivots returns macro+micro separated by layer", async () => {
-  const res = await fetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D`);
+  const res = await authedFetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D`);
   assert.equal(res.status, 200);
   const all = await res.json();
   assert.equal(all.count, 2);
 
-  const macro = await (await fetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=macro`)).json();
+  const macro = await (await authedFetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=macro`)).json();
   assert.equal(macro.count, 1);
   assert.equal(macro.pivots[0].layer, "macro");
   assert.equal(macro.pivots[0].degree, "intermediate");
 
-  const micro = await (await fetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=micro`)).json();
+  const micro = await (await authedFetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=micro`)).json();
   assert.equal(micro.count, 1);
   assert.equal(micro.pivots[0].layer, "micro");
 });
 
 test("GET /api/pivots rejects bad layer with 400", async () => {
-  const res = await fetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=bogus`);
+  const res = await authedFetch(`${BASE}/api/pivots?asset=BTC&timeframe=1D&layer=bogus`);
   assert.equal(res.status, 400);
 });
 
 test("POST /api/jobs runs allow-listed argv and reaches done", async () => {
-  const res = await fetch(`${BASE}/api/jobs`, {
+  const res = await authedFetch(`${BASE}/api/jobs`, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ assetId: 1, timeframe: "1D" }),
   });
@@ -230,7 +250,7 @@ test("POST /api/jobs runs allow-listed argv and reaches done", async () => {
   const { jobId } = await res.json();
   let job;
   for (let i = 0; i < 30; i++) {
-    job = await (await fetch(`${BASE}/api/jobs/${jobId}`)).json();
+    job = await (await authedFetch(`${BASE}/api/jobs/${jobId}`)).json();
     if (job.status !== "running") break;
     await new Promise((r) => setTimeout(r, 50));
   }
@@ -239,12 +259,12 @@ test("POST /api/jobs runs allow-listed argv and reaches done", async () => {
 });
 
 test("POST /api/jobs rejects duplicate running pair", async () => {
-  const first = await fetch(`${BASE}/api/jobs`, {
+  const first = await authedFetch(`${BASE}/api/jobs`, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ assetId: 1, timeframe: "1D" }),
   });
   assert.equal(first.status, 200);
-  const second = await fetch(`${BASE}/api/jobs`, {
+  const second = await authedFetch(`${BASE}/api/jobs`, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ assetId: 1, timeframe: "1D" }),
   });
@@ -252,7 +272,7 @@ test("POST /api/jobs rejects duplicate running pair", async () => {
 });
 
 test("POST /api/jobs rejects unsupported action", async () => {
-  const res = await fetch(`${BASE}/api/jobs`, {
+  const res = await authedFetch(`${BASE}/api/jobs`, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ assetId: 1, timeframe: "1D", action: "train" }),
   });
@@ -260,11 +280,11 @@ test("POST /api/jobs rejects unsupported action", async () => {
 });
 
 test("GET /api/jobs/:id returns 404 for unknown job", async () => {
-  const res = await fetch(`${BASE}/api/jobs/999999`);
+  const res = await authedFetch(`${BASE}/api/jobs/999999`);
   assert.equal(res.status, 404);
 });
 
 test("GET /api/candles 404s for missing asset data", async () => {
-  const res = await fetch(`${BASE}/api/candles?asset=NOPE&timeframe=1D`);
+  const res = await authedFetch(`${BASE}/api/candles?asset=NOPE&timeframe=1D`);
   assert.equal(res.status, 404);
 });

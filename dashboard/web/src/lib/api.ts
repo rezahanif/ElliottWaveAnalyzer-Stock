@@ -126,6 +126,11 @@ export interface Pivot {
 }
 
 export const api = {
+  login: (password: string) => j<{ authenticated: boolean }>("/auth/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  }),
+  logout: () => j<{ authenticated: boolean }>("/auth/logout", { method: "POST" }),
   getAssets: () => j<{ assets: Asset[] }>("/assets"),
 
   getPredictions: (asset: string, timeframe: string, limit = 200) =>

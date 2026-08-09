@@ -10,5 +10,7 @@ export default defineNitroConfig({
     // Required in deployment: bare python3 lacks pipeline dependencies.
     pythonBin: process.env.NITRO_PYTHON_BIN || "",
     jobTimeoutMs: process.env.NITRO_JOB_TIMEOUT_MS || "21600000",
+    dashboardPasswordHash: process.env.DASHBOARD_PASSWORD_HASH || "",
+    host: process.env.NITRO_HOST || "127.0.0.1",
   },
 });
